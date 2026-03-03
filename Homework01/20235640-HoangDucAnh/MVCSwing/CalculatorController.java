@@ -14,13 +14,15 @@ public class CalculatorController {
         view.btnCalculate.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 try {
-                    double a = Double.parseDouble(view.txtA.getText());
-                    double b = Double.parseDouble(view.txtB.getText());
+                    int a = Integer.parseInt(view.txtA.getText());
+                    int b = Integer.parseInt(view.txtB.getText());
                     String op = (String) view.cbOperator.getSelectedItem();
 
                     double result = model.calculate(a, b, op);
                     view.lblResult.setText("Result: " + result);
 
+                } catch (NumberFormatException ex) {
+                    view.lblResult.setText("You need to enter 2 integers");
                 } catch (Exception ex) {
                     view.lblResult.setText("Error!");
                 }
