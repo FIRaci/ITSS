@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "MVCCalculator",
+            "request": "launch",
+            "mainClass": "javafx.MVCCalculator",
+
+            "vmArgs": "--module-path /usr/share/java/java-openjfx --add-modules javafx.controls,javafx.fxml -Djava.library.path=/usr/lib/java-openjfx --enable-native-access=javafx.graphics",
+            "projectName": "20235729-PhanHuyHoang_bf0a5ddd"
+        },
+        {
+            "type": "java",
+            "name": "MVCCalculator",
+            "request": "launch",
+            "mainClass": "swing.MVCCalculator",
+            "projectName": "20235729-PhanHuyHoang_bf0a5ddd"
+        },
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}",
+            "vmArgs": "--module-path /usr/share/java/java-openjfx --add-modules javafx.controls,javafx.fxml -Djava.library.path=/usr/lib/java-openjfx --enable-native-access=javafx.graphics"
+        }
+    ]
+}
