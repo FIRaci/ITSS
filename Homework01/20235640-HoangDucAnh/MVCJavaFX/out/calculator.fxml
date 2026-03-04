@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" alignment="CENTER"
+      xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="CalculatorController">
+
+    <Label text="Calculator MVC" />
+
+    <TextField fx:id="txtA" promptText="Enter first integer"/>
+
+    <ComboBox fx:id="cbOperator"/>
+
+    <TextField fx:id="txtB" promptText="Enter second integer"/>
+
+    <Button text="Calculate" onAction="#handleCalculate"/>
+
+    <Label fx:id="lblResult" text="Result:"/>
+
+</VBox>
