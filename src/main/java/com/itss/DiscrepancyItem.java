@@ -21,3 +21,4 @@ public class DiscrepancyItem {
     public int getQtyReported() { return qtyReported; }
     public String getReason() { return reason; }
 }
+

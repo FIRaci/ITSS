@@ -18,3 +18,4 @@ public class SiteInventory {
     public String getMerchandiseCode() { return merchandiseCode; }
     public int getStockQty() { return stockQty; }
 }
+

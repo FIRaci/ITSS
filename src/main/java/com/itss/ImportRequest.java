@@ -1,13 +1,13 @@
 package com.itss;
 
-public class Ycnh {
+public class ImportRequest {
     private String id;
     private String status;
     private boolean isAccepted;
     private String createdBy;
     private String createdAt;
 
-    public Ycnh(String id, String status, boolean isAccepted, String createdBy, String createdAt) {
+    public ImportRequest(String id, String status, boolean isAccepted, String createdBy, String createdAt) {
         this.id = id;
         this.status = status;
         this.isAccepted = isAccepted;
@@ -26,3 +26,4 @@ public class Ycnh {
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 }
+

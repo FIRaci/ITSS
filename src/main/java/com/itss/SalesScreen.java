@@ -10,47 +10,45 @@ import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SalesScreen {
     private Main mainApp;
     private BorderPane view;
     private VBox contentArea;
+    private ImportRequestController controller;
 
     public SalesScreen(Main mainApp) {
         this.mainApp = mainApp;
+        this.controller = new ImportRequestController();
         buildView();
-        showYcnhList(); // Default view
+        showImportRequestList(); // Default view
     }
 
     private void buildView() {
         view = new BorderPane();
         
         // Sidebar
-        VBox sidebar = new VBox(20);
-        sidebar.setPadding(new Insets(20));
-        sidebar.setStyle("-fx-background-color: #333645;");
-        sidebar.setPrefWidth(200);
+        VBox sidebar = new VBox(8);
+        sidebar.getStyleClass().add("sidebar");
+        sidebar.setPrefWidth(240);
 
         Label lblMenu = new Label("MENU BÁN HÀNG");
-        lblMenu.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;");
+        lblMenu.getStyleClass().add("sidebar-title");
 
-        Button btnList = new Button("Danh sách YCNH");
+        Button btnList = new Button("Danh sách ImportRequest");
         btnList.setMaxWidth(Double.MAX_VALUE);
-        btnList.setOnAction(e -> showYcnhList());
+        btnList.getStyleClass().add("sidebar-btn");
+        btnList.setOnAction(e -> showImportRequestList());
 
-        Button btnHistory = new Button("Lịch sử YCNH");
+        Button btnHistory = new Button("Lịch sử ImportRequest");
         btnHistory.setMaxWidth(Double.MAX_VALUE);
+        btnHistory.getStyleClass().add("sidebar-btn");
         btnHistory.setOnAction(e -> showHistory());
 
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
+        btnLogout.getStyleClass().add("sidebar-btn");
         btnLogout.setOnAction(e -> {
             SessionManager.logout();
             mainApp.showLoginScreen();
@@ -68,13 +66,13 @@ public class SalesScreen {
 
         // Sidebar toggle button
         Button btnToggle = new Button("☰ Ẩn/Hiện Menu");
+        btnToggle.getStyleClass().add("btn-secondary");
         btnToggle.setOnAction(e -> {
             sidebar.setVisible(!sidebar.isVisible());
             sidebar.setManaged(sidebar.isVisible());
         });
         HBox topBar = new HBox(btnToggle);
-        topBar.setPadding(new Insets(10));
-        topBar.setStyle("-fx-background-color: #e0e0e0;");
+        topBar.setStyle("-fx-background-color: white; -fx-padding: 12px 20px; -fx-border-color: transparent transparent #e2e8f0 transparent; -fx-border-width: 0 0 1px 0;");
 
         VBox rightSide = new VBox(topBar, contentArea);
         VBox.setVgrow(contentArea, Priority.ALWAYS);
@@ -82,26 +80,33 @@ public class SalesScreen {
     }
 
     // ================= FLOW 1: XEM DANH SÁCH =================
-    private void showYcnhList() {
+    private void showImportRequestList() {
         contentArea.getChildren().clear();
 
         Label title = new Label("Quản lý Yêu Cầu Nhập Hàng");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        title.getStyleClass().add("header-title");
 
-        HBox toolbar = new HBox(10);
+        HBox toolbar = new HBox(12);
+        toolbar.getStyleClass().add("toolbar");
         TextField txtSearch = new TextField();
-        txtSearch.setPromptText("Tra cứu theo Mã YCNH...");
+        txtSearch.getStyleClass().add("text-field");
+        txtSearch.setPromptText("Tra cứu theo Mã ImportRequest...");
+        txtSearch.setPrefWidth(300);
         Button btnSearch = new Button("Tìm kiếm");
-        Button btnAdd = new Button("+ Tạo YCNH mới");
+        btnSearch.getStyleClass().add("btn-secondary");
+        Button btnAdd = new Button("+ Tạo ImportRequest mới");
+        btnAdd.getStyleClass().add("btn-primary");
 
         toolbar.getChildren().addAll(txtSearch, btnSearch, btnAdd);
 
-        TableView<Ycnh> table = new TableView<>();
-        setupYcnhTable(table);
+        TableView<ImportRequest> table = new TableView<>();
+        table.getStyleClass().add("table-view");
+        setupRequestTable(table);
 
-        Button btnEdit = new Button("Chỉnh sửa YCNH được chọn");
-        Button btnDelete = new Button("Xóa YCNH được chọn");
-        btnDelete.setStyle("-fx-background-color: #ff4444; -fx-text-fill: white;");
+        Button btnEdit = new Button("Chỉnh sửa ImportRequest được chọn");
+        btnEdit.getStyleClass().add("btn-secondary");
+        Button btnDelete = new Button("Xóa ImportRequest được chọn");
+        btnDelete.getStyleClass().add("btn-danger");
 
         btnEdit.setDisable(true);
         btnDelete.setDisable(true);
@@ -112,13 +117,13 @@ public class SalesScreen {
         });
 
         Runnable loadData = () -> {
-            table.setItems(fetchYcnhMaster(txtSearch.getText().toLowerCase()));
+            table.setItems(controller.getAllRequests(txtSearch.getText().toLowerCase()));
         };
 
         btnSearch.setOnAction(e -> loadData.run());
         btnAdd.setOnAction(e -> showAddMasterPopup(loadData));
         btnEdit.setOnAction(e -> {
-            Ycnh selected = table.getSelectionModel().getSelectedItem();
+            ImportRequest selected = table.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 if (selected.isAccepted()) {
                     showAlert("Từ chối", "Đơn hàng đã được BPĐHQT chấp nhận xử lý, không thể chỉnh sửa.");
@@ -129,7 +134,7 @@ public class SalesScreen {
         });
 
         btnDelete.setOnAction(e -> {
-            Ycnh selected = table.getSelectionModel().getSelectedItem();
+            ImportRequest selected = table.getSelectionModel().getSelectedItem();
             if (selected != null) {
                 if (selected.isAccepted()) {
                     showAlert("Từ chối", "Đơn hàng đã được BPĐHQT tiếp nhận, không thể xóa.");
@@ -137,15 +142,16 @@ public class SalesScreen {
                     Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
                     confirm.setTitle("Xác nhận xóa");
                     confirm.setHeaderText(null);
-                    confirm.setContentText("Bạn có chắc chắn muốn xóa toàn bộ YCNH " + selected.getId() + " không?");
+                    confirm.setContentText("Bạn có chắc chắn muốn xóa toàn bộ ImportRequest " + selected.getId() + " không?");
                     if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-                        try (Connection conn = Database.getConnection();
-                             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM ycnh WHERE id = ?")) {
-                            pstmt.setString(1, selected.getId());
-                            pstmt.executeUpdate();
+                        try {
+                            controller.deleteRequest(selected.getId());
                             loadData.run();
-                            showSuccessPopup("Đã xóa hoàn toàn YCNH!");
-                        } catch (Exception ex) { ex.printStackTrace(); }
+                            showSuccessPopup("Đã xóa hoàn toàn ImportRequest!");
+                        } catch (Exception ex) {
+                            showAlert("Lỗi", "Không thể xóa: " + ex.getMessage());
+                            ex.printStackTrace();
+                        }
                     }
                 }
             }
@@ -153,28 +159,32 @@ public class SalesScreen {
 
         loadData.run();
 
-        HBox bottomActions = new HBox(10, btnEdit, btnDelete);
-        contentArea.getChildren().addAll(title, toolbar, table, bottomActions);
+        HBox bottomActions = new HBox(12, btnEdit, btnDelete);
+        VBox mainCard = new VBox(20, title, toolbar, table, bottomActions);
+        mainCard.getStyleClass().add("card");
+        VBox.setVgrow(table, Priority.ALWAYS);
+        
+        contentArea.getChildren().addAll(mainCard);
     }
 
     @SuppressWarnings("unchecked")
-    private void setupYcnhTable(TableView<Ycnh> table) {
-        TableColumn<Ycnh, String> colId = new TableColumn<>("Mã Yêu Cầu");
+    private void setupRequestTable(TableView<ImportRequest> table) {
+        TableColumn<ImportRequest, String> colId = new TableColumn<>("Mã Yêu Cầu");
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        TableColumn<Ycnh, String> colStatus = new TableColumn<>("Trạng thái");
+        TableColumn<ImportRequest, String> colStatus = new TableColumn<>("Trạng thái");
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
-        TableColumn<Ycnh, Boolean> colAcp = new TableColumn<>("Đã duyệt(BPĐHQT)?");
+        TableColumn<ImportRequest, Boolean> colAcp = new TableColumn<>("Đã duyệt(BPĐHQT)?");
         colAcp.setCellValueFactory(new PropertyValueFactory<>("accepted"));
-        TableColumn<Ycnh, String> colBy = new TableColumn<>("Người tạo");
+        TableColumn<ImportRequest, String> colBy = new TableColumn<>("Người tạo");
         colBy.setCellValueFactory(new PropertyValueFactory<>("createdBy"));
-        TableColumn<Ycnh, String> colAt = new TableColumn<>("Ngày tạo");
+        TableColumn<ImportRequest, String> colAt = new TableColumn<>("Ngày tạo");
         colAt.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         
         table.getColumns().addAll(colId, colStatus, colAcp, colBy, colAt);
         table.setPrefHeight(300);
 
         table.setRowFactory(tv -> {
-            TableRow<Ycnh> row = new TableRow<>();
+            TableRow<ImportRequest> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && (!row.isEmpty()) ) {
                     showDetailsTablePopup(row.getItem());
@@ -184,73 +194,45 @@ public class SalesScreen {
         });
     }
 
-    private ObservableList<Ycnh> fetchYcnhMaster(String keyword) {
-        ObservableList<Ycnh> list = FXCollections.observableArrayList();
-        String sql = "SELECT * FROM ycnh WHERE LOWER(id) LIKE ? ORDER BY created_at DESC";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, "%" + keyword + "%");
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                list.add(new Ycnh(rs.getString("id"), rs.getString("status"), 
-                        rs.getBoolean("is_accepted"), rs.getString("created_by"), rs.getString("created_at")));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return list;
-    }
-
-    private void showDetailsTablePopup(Ycnh ycnh) {
+    private void showDetailsTablePopup(ImportRequest importRequest) {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setTitle("Chi tiết: " + ycnh.getId());
+        stage.setTitle("Chi tiết: " + importRequest.getId());
 
         VBox layout = new VBox(10);
         layout.setPadding(new Insets(20));
 
-        TableView<YcnhChiTiet> table = new TableView<>();
+        TableView<ImportRequestDetail> table = new TableView<>();
         setupDetailTable(table);
-        table.setItems(fetchDetails(ycnh.getId()));
+        table.setItems(controller.getRequestDetails(importRequest.getId()));
 
         Button btnClose = new Button("Đóng");
+        btnClose.getStyleClass().add("btn-secondary");
         btnClose.setOnAction(e -> stage.close());
 
         layout.getChildren().addAll(new Label("Danh sách các mặt hàng:"), table, btnClose);
-        stage.setScene(new Scene(layout, 1200, 650));
+        Scene scene = new Scene(layout, 1200, 650);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        stage.setScene(scene);
         stage.show();
     }
 
     @SuppressWarnings("unchecked")
-    private void setupDetailTable(TableView<YcnhChiTiet> table) {
-        TableColumn<YcnhChiTiet, String> colCode = new TableColumn<>("Mã hàng");
+    private void setupDetailTable(TableView<ImportRequestDetail> table) {
+        TableColumn<ImportRequestDetail, String> colCode = new TableColumn<>("Mã hàng");
         colCode.setCellValueFactory(new PropertyValueFactory<>("merchandiseCode"));
-        TableColumn<YcnhChiTiet, Integer> colQty = new TableColumn<>("Số lượng");
+        TableColumn<ImportRequestDetail, Integer> colQty = new TableColumn<>("Số lượng");
         colQty.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-        TableColumn<YcnhChiTiet, String> colUnit = new TableColumn<>("Đơn vị");
+        TableColumn<ImportRequestDetail, String> colUnit = new TableColumn<>("Đơn vị");
         colUnit.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        TableColumn<YcnhChiTiet, String> colDate = new TableColumn<>("Ngày nhận");
+        TableColumn<ImportRequestDetail, String> colDate = new TableColumn<>("Ngày nhận");
         colDate.setCellValueFactory(new PropertyValueFactory<>("desiredDeliveryDate"));
-        TableColumn<YcnhChiTiet, String> colAction = new TableColumn<>("Thay đổi");
+        TableColumn<ImportRequestDetail, String> colAction = new TableColumn<>("Thay đổi");
         colAction.setCellValueFactory(new PropertyValueFactory<>("uiAction"));
         table.getColumns().addAll(colCode, colQty, colUnit, colDate, colAction);
     }
 
-    private ObservableList<YcnhChiTiet> fetchDetails(String ycnhId) {
-        ObservableList<YcnhChiTiet> list = FXCollections.observableArrayList();
-        String sql = "SELECT * FROM ycnh_chitiet WHERE ycnh_id = ? ORDER BY id ASC";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, ycnhId);
-            ResultSet rs = pstmt.executeQuery();
-            while (rs.next()) {
-                list.add(new YcnhChiTiet(rs.getInt("id"), rs.getString("ycnh_id"), 
-                        rs.getString("merchandise_code"), rs.getInt("quantity"), 
-                        rs.getString("unit"), String.valueOf(rs.getDate("desired_delivery_date"))));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return list;
-    }
-
-    // ================= FLOW 2: THÊM YCNH (Master - Detail) =================
+    // ================= FLOW 2: THÊM ImportRequest (Master - Detail) =================
     private void showAddMasterPopup(Runnable onComplete) {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
@@ -260,25 +242,29 @@ public class SalesScreen {
         layout.setPadding(new Insets(20));
 
         TextField txtId = new TextField(); txtId.setPromptText("Mã Yêu Cầu (VD: REQ-002)");
-        HBox topBox = new HBox(10, new Label("Mã YCNH:"), txtId);
+        txtId.getStyleClass().add("text-field");
+        HBox topBox = new HBox(10, new Label("Mã ImportRequest:"), txtId);
 
         // Subform for details
         GridPane grid = new GridPane();
         grid.setHgap(10); grid.setVgap(10);
-        TextField txtCode = new TextField(); txtCode.setPromptText("Mã hàng");
-        TextField txtQty = new TextField(); txtQty.setPromptText("SL");
-        TextField txtUnit = new TextField(); txtUnit.setPromptText("Đơn vị");
+        TextField txtCode = new TextField(); txtCode.setPromptText("Mã hàng"); txtCode.getStyleClass().add("text-field");
+        TextField txtQty = new TextField(); txtQty.setPromptText("SL"); txtQty.getStyleClass().add("text-field");
+        TextField txtUnit = new TextField(); txtUnit.setPromptText("Đơn vị"); txtUnit.getStyleClass().add("text-field");
         DatePicker dpDate = new DatePicker();
+        dpDate.getStyleClass().add("text-field");
 
         grid.addRow(0, new Label("Mã hàng:"), txtCode, new Label("Số lượng:"), txtQty);
         grid.addRow(1, new Label("Đơn vị:"), txtUnit, new Label("Ngày nhận:"), dpDate);
 
-        ObservableList<YcnhChiTiet> detailsList = FXCollections.observableArrayList();
-        TableView<YcnhChiTiet> table = new TableView<>();
+        ObservableList<ImportRequestDetail> detailsList = FXCollections.observableArrayList();
+        TableView<ImportRequestDetail> table = new TableView<>();
+        table.getStyleClass().add("table-view");
         setupDetailTable(table);
         table.setItems(detailsList);
 
         Button btnAddRow = new Button("Thêm mặt hàng");
+        btnAddRow.getStyleClass().add("btn-secondary");
         btnAddRow.setOnAction(e -> {
             try {
                 if (txtCode.getText().isEmpty() || txtUnit.getText().isEmpty() || dpDate.getValue() == null) {
@@ -289,7 +275,7 @@ public class SalesScreen {
                 }
                 int qty = Integer.parseInt(txtQty.getText());
                 if (qty <= 0) throw new Exception();
-                YcnhChiTiet ct = new YcnhChiTiet(0, "", txtCode.getText(), qty, txtUnit.getText(), dpDate.getValue().toString());
+                ImportRequestDetail ct = new ImportRequestDetail(0, "", txtCode.getText(), qty, txtUnit.getText(), dpDate.getValue().toString());
                 ct.setUiAction("Add");
                 detailsList.add(ct);
                 txtCode.clear(); txtQty.clear(); txtUnit.clear(); dpDate.setValue(null);
@@ -299,87 +285,56 @@ public class SalesScreen {
         });
 
         Button btnSave = new Button("Gửi Yêu Cầu");
+        btnSave.getStyleClass().add("btn-primary");
         btnSave.setOnAction(e -> {
-            if (txtId.getText().isEmpty()) { showAlert("Lỗi", "Mã YCNH không được để trống!"); return; }
-            if (detailsList.isEmpty()) { showAlert("Lỗi", "Danh sách mặt hàng trống!"); return; }
-
             String reqId = txtId.getText();
             String user = SessionManager.getCurrentUser().getUsername();
 
-            try (Connection conn = Database.getConnection()) {
-                conn.setAutoCommit(false);
-                try {
-                    // 1. Insert Master
-                    String sqlMaster = "INSERT INTO ycnh (id, created_by) VALUES (?, ?)";
-                    try(PreparedStatement psM = conn.prepareStatement(sqlMaster)) {
-                        psM.setString(1, reqId); psM.setString(2, user); psM.executeUpdate();
-                    }
-
-                    // 2. Insert Details
-                    String sqlDetail = "INSERT INTO ycnh_chitiet (ycnh_id, merchandise_code, quantity, unit, desired_delivery_date) VALUES (?, ?, ?, ?, ?)";
-                    try(PreparedStatement psD = conn.prepareStatement(sqlDetail)) {
-                        for(YcnhChiTiet ct : detailsList) {
-                            psD.setString(1, reqId);
-                            psD.setString(2, ct.getMerchandiseCode());
-                            psD.setInt(3, ct.getQuantity());
-                            psD.setString(4, ct.getUnit());
-                            psD.setDate(5, java.sql.Date.valueOf(LocalDate.parse(ct.getDesiredDeliveryDate())));
-                            psD.addBatch();
-                        }
-                        psD.executeBatch();
-                    }
-
-                    // 3. Log History
-                    String sqlLog = "INSERT INTO ycnh_history (ycnh_id, action_type, changed_by, diff_text, reason) VALUES (?, ?, ?, ?, ?)";
-                    try(PreparedStatement psL = conn.prepareStatement(sqlLog)) {
-                        psL.setString(1, reqId); psL.setString(2, "TẠO MỚI"); psL.setString(3, user); 
-                        psL.setString(4, "Tạo mới yêu cầu với " + detailsList.size() + " mặt hàng.");
-                        psL.setString(5, "Tạo mới"); psL.executeUpdate();
-                    }
-
-                    conn.commit();
-                    showSuccessPopup("Gửi yêu cầu thành công!");
-                    stage.close();
-                    onComplete.run();
-                } catch (Exception ex) {
-                    conn.rollback();
-                    showAlert("Lỗi", "Hệ thống lỗi hoặc Mã YCNH đã tồn tại! " + ex.getMessage());
-                }
-            } catch (Exception ex) { ex.printStackTrace(); }
+            try {
+                controller.createNewRequest(reqId, user, detailsList);
+                showSuccessPopup("Gửi yêu cầu thành công!");
+                stage.close();
+                onComplete.run();
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
+            }
         });
 
         layout.getChildren().addAll(topBox, new Separator(), grid, btnAddRow, table, btnSave);
-        stage.setScene(new Scene(layout, 600, 600));
+        Scene scene = new Scene(layout, 700, 600);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        stage.setScene(scene);
         stage.show();
     }
 
     // ================= FLOW 3: CHỈNH SỬA & DIFF =================
-    private void showEditMasterPopup(Ycnh ycnh, Runnable onComplete) {
+    private void showEditMasterPopup(ImportRequest importRequest, Runnable onComplete) {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setTitle("Chỉnh sửa YCNH: " + ycnh.getId());
+        stage.setTitle("Chỉnh sửa ImportRequest: " + importRequest.getId());
 
         VBox layout = new VBox(15);
         layout.setPadding(new Insets(20));
 
-        ObservableList<YcnhChiTiet> oldList = fetchDetails(ycnh.getId());
-        ObservableList<YcnhChiTiet> editingList = FXCollections.observableArrayList();
-        for(YcnhChiTiet c : oldList) editingList.add(c.clone());
+        ObservableList<ImportRequestDetail> oldList = controller.getRequestDetails(importRequest.getId());
+        ObservableList<ImportRequestDetail> editingList = FXCollections.observableArrayList();
+        for(ImportRequestDetail c : oldList) editingList.add(c.clone());
 
-        TableView<YcnhChiTiet> table = new TableView<>();
+        TableView<ImportRequestDetail> table = new TableView<>();
+        table.getStyleClass().add("table-view");
         setupDetailTable(table);
         table.setItems(editingList);
 
         // Edit existing selected row
         GridPane editGrid = new GridPane();
         editGrid.setHgap(10); editGrid.setVgap(10);
-        TextField eQty = new TextField(); eQty.setPromptText("SL mới");
-        DatePicker eDate = new DatePicker();
-        Button btnUpdateRow = new Button("Cập nhật dòng");
-        Button btnDeleteRow = new Button("Xóa dòng");
+        TextField eQty = new TextField(); eQty.setPromptText("SL mới"); eQty.getStyleClass().add("text-field");
+        DatePicker eDate = new DatePicker(); eDate.getStyleClass().add("text-field");
+        Button btnUpdateRow = new Button("Cập nhật dòng"); btnUpdateRow.getStyleClass().add("btn-secondary");
+        Button btnDeleteRow = new Button("Xóa dòng"); btnDeleteRow.getStyleClass().add("btn-danger");
         
         btnUpdateRow.setOnAction(e -> {
-            YcnhChiTiet sel = table.getSelectionModel().getSelectedItem();
+            ImportRequestDetail sel = table.getSelectionModel().getSelectedItem();
             if (sel != null && !sel.getUiAction().equals("Delete")) {
                 if (eDate.getValue() == null) {
                     showAlert("Lỗi", "Ngày nhận không được để trống."); return;
@@ -396,7 +351,7 @@ public class SalesScreen {
             }
         });
         btnDeleteRow.setOnAction(e -> {
-            YcnhChiTiet sel = table.getSelectionModel().getSelectedItem();
+            ImportRequestDetail sel = table.getSelectionModel().getSelectedItem();
             if(sel != null) {
                 sel.setUiAction("Delete"); table.refresh();
             }
@@ -413,11 +368,11 @@ public class SalesScreen {
         // Add new item entirely
         GridPane addGrid = new GridPane();
         addGrid.setHgap(10); addGrid.setVgap(10);
-        TextField aCode = new TextField(); aCode.setPromptText("Mã hàng");
-        TextField aQty = new TextField(); aQty.setPromptText("SL");
-        TextField aUnit = new TextField(); aUnit.setPromptText("Đơn vị");
-        DatePicker aDate = new DatePicker();
-        Button btnAddRow = new Button("Thêm hàng mới");
+        TextField aCode = new TextField(); aCode.setPromptText("Mã hàng"); aCode.getStyleClass().add("text-field");
+        TextField aQty = new TextField(); aQty.setPromptText("SL"); aQty.getStyleClass().add("text-field");
+        TextField aUnit = new TextField(); aUnit.setPromptText("Đơn vị"); aUnit.getStyleClass().add("text-field");
+        DatePicker aDate = new DatePicker(); aDate.getStyleClass().add("text-field");
+        Button btnAddRow = new Button("Thêm hàng mới"); btnAddRow.getStyleClass().add("btn-secondary");
 
         btnAddRow.setOnAction(e -> {
             try {
@@ -429,7 +384,7 @@ public class SalesScreen {
                 }
                 int qty = Integer.parseInt(aQty.getText());
                 if (qty <= 0) throw new Exception();
-                YcnhChiTiet ct = new YcnhChiTiet(0, ycnh.getId(), aCode.getText(), qty, aUnit.getText(), aDate.getValue().toString());
+                ImportRequestDetail ct = new ImportRequestDetail(0, importRequest.getId(), aCode.getText(), qty, aUnit.getText(), aDate.getValue().toString());
                 ct.setUiAction("Add");
                 editingList.add(ct);
                 table.refresh();
@@ -442,145 +397,91 @@ public class SalesScreen {
 
 
         Button btnReview = new Button("Lưu & So Sánh (Diff)");
+        btnReview.getStyleClass().add("btn-primary");
         btnReview.setOnAction(e -> {
-            showDiffReviewPopup(ycnh.getId(), oldList, editingList, stage, onComplete);
+            showDiffReviewPopup(importRequest.getId(), oldList, editingList, stage, onComplete);
         });
 
         layout.getChildren().addAll(new Label("Tính năng thay đổi:"), table, editGrid, addGrid, btnReview);
-        stage.setScene(new Scene(layout, 1200, 650));
+        Scene scene = new Scene(layout, 1200, 650);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        stage.setScene(scene);
         stage.show();
     }
 
-    private void showDiffReviewPopup(String ycnhId, ObservableList<YcnhChiTiet> oldList, ObservableList<YcnhChiTiet> newList, Stage parentStage, Runnable onComplete) {
-        long remainCount = newList.stream().filter(n -> !n.getUiAction().equals("Delete")).count();
-        if (remainCount == 0) {
-            showAlert("Lỗi", "Danh sách hàng không được để trống. Vui lòng hủy yêu cầu nếu không còn nhu cầu.");
-            return;
-        }
-
-        StringBuilder diff = new StringBuilder();
-        List<YcnhChiTiet> toInsert = new ArrayList<>();
-        List<YcnhChiTiet> toUpdate = new ArrayList<>();
-        List<YcnhChiTiet> toDelete = new ArrayList<>();
-
-        for(YcnhChiTiet n : newList) {
-            if(n.getUiAction().equals("Delete")) {
-                diff.append("- Xóa: ").append(n.getMerchandiseCode()).append("\n");
-                toDelete.add(n);
-            } else if(n.getUiAction().equals("Edit")) {
-                YcnhChiTiet old = oldList.stream().filter(o -> o.getId() == n.getId()).findFirst().orElse(null);
-                if(old != null) {
-                    if (old.getQuantity() != n.getQuantity() || !old.getDesiredDeliveryDate().equals(n.getDesiredDeliveryDate())) {
-                         diff.append("~ Cập nhật ").append(n.getMerchandiseCode()).append(": ")
-                             .append("SL(").append(old.getQuantity()).append("->").append(n.getQuantity()).append(") ")
-                             .append("Ngày(").append(old.getDesiredDeliveryDate()).append("->").append(n.getDesiredDeliveryDate()).append(")\n");
-                         toUpdate.add(n);
-                    }
-                }
-            } else if(n.getUiAction().equals("Add")) {
-                diff.append("+ Thêm: ").append(n.getMerchandiseCode()).append(" SL:").append(n.getQuantity()).append("\n");
-                toInsert.add(n);
+    private void showDiffReviewPopup(String requestId, ObservableList<ImportRequestDetail> oldList, ObservableList<ImportRequestDetail> newList, Stage parentStage, Runnable onComplete) {
+        String diffText = controller.generateDiffText(oldList, newList);
+        if (diffText.isEmpty()) {
+            long remainCount = newList.stream().filter(n -> !n.getUiAction().equals("Delete")).count();
+            if (remainCount == 0) {
+                showAlert("Lỗi", "Danh sách hàng không được để trống. Vui lòng hủy yêu cầu nếu không còn nhu cầu.");
+                return;
             }
-        }
-
-        if(diff.length() == 0) {
-            showAlert("Thông báo", "Không có thay đổi nào để lưu!"); return;
+            showAlert("Thông báo", "Không có thay đổi nào để lưu!"); 
+            return;
         }
 
         Stage diffStage = new Stage();
         diffStage.initModality(Modality.APPLICATION_MODAL);
         VBox layout = new VBox(10);
         layout.setPadding(new Insets(20));
-        TextArea txtDiff = new TextArea(diff.toString()); txtDiff.setEditable(false);
+        TextArea txtDiff = new TextArea(diffText); txtDiff.setEditable(false);
+        txtDiff.getStyleClass().add("text-field");
         TextField txtReason = new TextField(); txtReason.setPromptText("Nhập lý do thay đổi (Bắt buộc)");
+        txtReason.getStyleClass().add("text-field");
         Button btnConfirm = new Button("Xác nhận");
+        btnConfirm.getStyleClass().add("btn-primary");
 
         btnConfirm.setOnAction(e -> {
-            if(txtReason.getText().isEmpty()) { showAlert("Lỗi", "Phải nhập lý do thay đổi!"); return; }
-            applyUpdatesToDb(ycnhId, toInsert, toUpdate, toDelete, txtDiff.getText(), txtReason.getText());
-            diffStage.close(); parentStage.close();
-            showSuccessPopup("Cập nhật thành công!");
-            onComplete.run();
+            String user = SessionManager.getCurrentUser().getUsername();
+            try {
+                controller.updateRequest(requestId, oldList, newList, txtReason.getText(), user);
+                diffStage.close(); parentStage.close();
+                showSuccessPopup("Cập nhật thành công!");
+                onComplete.run();
+            } catch(Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
+            }
         });
 
         layout.getChildren().addAll(new Label("Bảng So Sánh (Diff):"), txtDiff, new Label("Lý do:"), txtReason, btnConfirm);
-        diffStage.setScene(new Scene(layout, 500, 400));
+        Scene scene = new Scene(layout, 550, 450);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        diffStage.setScene(scene);
         diffStage.show();
-    }
-
-    private void applyUpdatesToDb(String reqId, List<YcnhChiTiet> inserts, List<YcnhChiTiet> updates, List<YcnhChiTiet> deletes, String diffText, String reason) {
-        String user = SessionManager.getCurrentUser().getUsername();
-        try (Connection conn = Database.getConnection()) {
-            conn.setAutoCommit(false);
-            try {
-                // Delete
-                try(PreparedStatement psD = conn.prepareStatement("DELETE FROM ycnh_chitiet WHERE id = ?")) {
-                    for(YcnhChiTiet c : deletes) { psD.setInt(1, c.getId()); psD.addBatch(); }
-                    psD.executeBatch();
-                }
-                // Update
-                try(PreparedStatement psU = conn.prepareStatement("UPDATE ycnh_chitiet SET quantity=?, desired_delivery_date=? WHERE id=?")) {
-                    for(YcnhChiTiet c : updates) { 
-                        psU.setInt(1, c.getQuantity()); psU.setDate(2, java.sql.Date.valueOf(c.getDesiredDeliveryDate()));
-                        psU.setInt(3, c.getId()); psU.addBatch(); 
-                    }
-                    psU.executeBatch();
-                }
-                // Add
-                try(PreparedStatement psA = conn.prepareStatement("INSERT INTO ycnh_chitiet (ycnh_id, merchandise_code, quantity, unit, desired_delivery_date) VALUES (?, ?, ?, ?, ?)")) {
-                    for(YcnhChiTiet c : inserts) {
-                        psA.setString(1, reqId); psA.setString(2, c.getMerchandiseCode()); psA.setInt(3, c.getQuantity());
-                        psA.setString(4, c.getUnit()); psA.setDate(5, java.sql.Date.valueOf(c.getDesiredDeliveryDate()));
-                        psA.addBatch();
-                    }
-                    psA.executeBatch();
-                }
-                // Log
-                try(PreparedStatement psL = conn.prepareStatement("INSERT INTO ycnh_history (ycnh_id, action_type, changed_by, diff_text, reason) VALUES (?, ?, ?, ?, ?)")) {
-                    psL.setString(1, reqId); psL.setString(2, "CHỈNH SỬA"); psL.setString(3, user);
-                    psL.setString(4, diffText); psL.setString(5, reason); psL.executeUpdate();
-                }
-                conn.commit();
-            } catch(Exception e) { conn.rollback(); e.printStackTrace(); }
-        } catch(Exception e) { e.printStackTrace(); }
     }
 
     // ================= FLOW 4: LỊCH SỬ (LOG) =================
     private void showHistory() {
         contentArea.getChildren().clear();
-        Label title = new Label("Lịch sử chỉnh sửa YCNH (History Log)");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        Label title = new Label("Lịch sử chỉnh sửa ImportRequest (History Log)");
+        title.getStyleClass().add("header-title");
 
-        TableView<YcnhHistory> table = new TableView<>();
-        TableColumn<YcnhHistory, String> colYcnh = new TableColumn<>("Mã YCNH");
-        colYcnh.setCellValueFactory(new PropertyValueFactory<>("ycnhId"));
-        TableColumn<YcnhHistory, String> colAction = new TableColumn<>("Hành động");
+        TableView<ImportRequestHistory> table = new TableView<>();
+        table.getStyleClass().add("table-view");
+        TableColumn<ImportRequestHistory, String> colYcnh = new TableColumn<>("Mã ImportRequest");
+        colYcnh.setCellValueFactory(new PropertyValueFactory<>("requestId"));
+        TableColumn<ImportRequestHistory, String> colAction = new TableColumn<>("Hành động");
         colAction.setCellValueFactory(new PropertyValueFactory<>("actionType"));
-        TableColumn<YcnhHistory, String> colBy = new TableColumn<>("Bởi");
+        TableColumn<ImportRequestHistory, String> colBy = new TableColumn<>("Bởi");
         colBy.setCellValueFactory(new PropertyValueFactory<>("changedBy"));
-        TableColumn<YcnhHistory, String> colDiff = new TableColumn<>("Diff (So sánh)");
+        TableColumn<ImportRequestHistory, String> colDiff = new TableColumn<>("Diff (So sánh)");
         colDiff.setCellValueFactory(new PropertyValueFactory<>("diffText"));
         colDiff.setPrefWidth(250);
-        TableColumn<YcnhHistory, String> colReason = new TableColumn<>("Lý do");
+        TableColumn<ImportRequestHistory, String> colReason = new TableColumn<>("Lý do");
         colReason.setCellValueFactory(new PropertyValueFactory<>("reason"));
-        TableColumn<YcnhHistory, String> colAt = new TableColumn<>("Thời gian");
+        TableColumn<ImportRequestHistory, String> colAt = new TableColumn<>("Thời gian");
         colAt.setCellValueFactory(new PropertyValueFactory<>("changedAt"));
 
         table.getColumns().addAll(colYcnh, colAction, colBy, colDiff, colReason, colAt);
         table.setPrefHeight(500);
 
-        ObservableList<YcnhHistory> list = FXCollections.observableArrayList();
-        String sql = "SELECT * FROM ycnh_history ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                list.add(new YcnhHistory(rs.getInt("id"), rs.getString("ycnh_id"), rs.getString("action_type"),
-                        rs.getString("changed_by"), rs.getString("diff_text"), rs.getString("reason"), rs.getString("changed_at")));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        table.setItems(list);
-        contentArea.getChildren().addAll(title, table);
+        table.setItems(controller.getAllHistory());
+
+        VBox card = new VBox(20, title, table);
+        card.getStyleClass().add("card");
+        VBox.setVgrow(table, Priority.ALWAYS);
+        contentArea.getChildren().addAll(card);
     }
 
     private void showAlert(String title, String msg) { Alert a = new Alert(Alert.AlertType.WARNING); a.setTitle(title); a.setContentText(msg); a.showAndWait(); }

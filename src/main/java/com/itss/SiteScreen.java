@@ -21,20 +21,21 @@ public class SiteScreen {
         this.mainApp = mainApp;
         view = new BorderPane();
         
-        VBox sidebar = new VBox(20);
-        sidebar.setPadding(new Insets(20));
-        sidebar.setStyle("-fx-background-color: #e65100;");
-        sidebar.setPrefWidth(220);
+        VBox sidebar = new VBox(8);
+        sidebar.getStyleClass().add("sidebar");
+        sidebar.setPrefWidth(240);
 
-        Label lbl = new Label("SITE ĐỐI TÁC");
-        lbl.setStyle("-fx-text-fill: white; -fx-font-weight: bold;");
+        Label lbl = new Label("SITE Äá»I TÃC");
+        lbl.getStyleClass().add("sidebar-title");
 
-        Button btnOrder = new Button("Đơn hàng nhận được");
+        Button btnOrder = new Button("ÄÆ¡n hÃ ng nháº­n Ä‘Æ°á»£c");
         btnOrder.setMaxWidth(Double.MAX_VALUE);
+        btnOrder.getStyleClass().add("sidebar-btn");
         btnOrder.setOnAction(e -> showOrders());
 
-        Button btnLogout = new Button("Đăng xuất");
+        Button btnLogout = new Button("ÄÄƒng xuáº¥t");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
+        btnLogout.getStyleClass().add("sidebar-btn");
         btnLogout.setOnAction(e -> { SessionManager.logout(); mainApp.showLoginScreen(); });
 
         sidebar.getChildren().addAll(lbl, btnOrder, btnLogout);
@@ -49,15 +50,16 @@ public class SiteScreen {
 
     private void showOrders() {
         contentArea.getChildren().clear();
-        Label t = new Label("Danh sách đơn đặt hàng từ IMS (UC06.1)");
-        t.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        Label t = new Label("Danh sÃ¡ch Ä‘Æ¡n Ä‘áº·t hÃ ng tá»« IMS (UC06.1)");
+        t.getStyleClass().add("header-title");
 
         TableView<InternationalOrder> table = new TableView<>();
-        TableColumn<InternationalOrder, Integer> c1 = new TableColumn<>("Mã Lệnh"); c1.setCellValueFactory(new PropertyValueFactory<>("id"));
-        TableColumn<InternationalOrder, String> c2 = new TableColumn<>("Mã Hàng"); c2.setCellValueFactory(new PropertyValueFactory<>("merchandiseCode"));
-        TableColumn<InternationalOrder, Integer> c3 = new TableColumn<>("Số lượng Cần"); c3.setCellValueFactory(new PropertyValueFactory<>("qty"));
-        TableColumn<InternationalOrder, String> c4 = new TableColumn<>("Vận chuyển"); c4.setCellValueFactory(new PropertyValueFactory<>("shippingMethod"));
-        TableColumn<InternationalOrder, String> c5 = new TableColumn<>("Trạng thái"); c5.setCellValueFactory(new PropertyValueFactory<>("status"));
+        table.getStyleClass().add("table-view");
+        TableColumn<InternationalOrder, Integer> c1 = new TableColumn<>("MÃ£ Lá»‡nh"); c1.setCellValueFactory(new PropertyValueFactory<>("id"));
+        TableColumn<InternationalOrder, String> c2 = new TableColumn<>("MÃ£ HÃ ng"); c2.setCellValueFactory(new PropertyValueFactory<>("merchandiseCode"));
+        TableColumn<InternationalOrder, Integer> c3 = new TableColumn<>("Sá»‘ lÆ°á»£ng Cáº§n"); c3.setCellValueFactory(new PropertyValueFactory<>("qty"));
+        TableColumn<InternationalOrder, String> c4 = new TableColumn<>("Váº­n chuyá»ƒn"); c4.setCellValueFactory(new PropertyValueFactory<>("shippingMethod"));
+        TableColumn<InternationalOrder, String> c5 = new TableColumn<>("Tráº¡ng thÃ¡i"); c5.setCellValueFactory(new PropertyValueFactory<>("status"));
         table.getColumns().addAll(c1, c2, c3, c4, c5);
 
         ObservableList<InternationalOrder> list = FXCollections.observableArrayList();
@@ -71,13 +73,18 @@ public class SiteScreen {
         } catch (Exception e) {}
         table.setItems(list);
 
-        Button btnProc = new Button("Giao hàng & Cập nhật tồn kho");
+        Button btnProc = new Button("Giao hÃ ng & Cáº­p nháº­t tá»“n kho");
+        btnProc.getStyleClass().add("btn-primary");
         btnProc.setOnAction(e -> {
-            Alert a = new Alert(Alert.AlertType.INFORMATION); a.setContentText("Giao hàng thành công!"); a.showAndWait();
+            Alert a = new Alert(Alert.AlertType.INFORMATION); a.setContentText("Giao hÃ ng thÃ nh cÃ´ng!"); a.showAndWait();
         });
 
-        contentArea.getChildren().addAll(t, table, btnProc);
+        VBox card = new VBox(20, t, table, btnProc);
+        card.getStyleClass().add("card");
+        VBox.setVgrow(table, Priority.ALWAYS);
+        contentArea.getChildren().addAll(card);
     }
 
     public BorderPane getView() { return view; }
 }
+

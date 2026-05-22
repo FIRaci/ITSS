@@ -28,3 +28,4 @@ public class Site {
     public void setDaysAir(int daysAir) { this.daysAir = daysAir; }
     public void setOtherInfo(String otherInfo) { this.otherInfo = otherInfo; }
 }
+

@@ -28,3 +28,4 @@ public class User {
     public String getSiteCode() { return siteCode; }
     public void setSiteCode(String siteCode) { this.siteCode = siteCode; }
 }
+

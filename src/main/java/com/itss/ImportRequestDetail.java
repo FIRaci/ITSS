@@ -1,8 +1,8 @@
 package com.itss;
 
-public class YcnhChiTiet {
+public class ImportRequestDetail {
     private int id;
-    private String ycnhId;
+    private String requestId;
     private String merchandiseCode;
     private int quantity;
     private String unit;
@@ -11,9 +11,9 @@ public class YcnhChiTiet {
     // Used to track state in UI (Add/Edit/Delete)
     private String uiAction = "None"; // None, Add, Edit, Delete
 
-    public YcnhChiTiet(int id, String ycnhId, String merchandiseCode, int quantity, String unit, String desiredDeliveryDate) {
+    public ImportRequestDetail(int id, String requestId, String merchandiseCode, int quantity, String unit, String desiredDeliveryDate) {
         this.id = id;
-        this.ycnhId = ycnhId;
+        this.requestId = requestId;
         this.merchandiseCode = merchandiseCode;
         this.quantity = quantity;
         this.unit = unit;
@@ -22,8 +22,8 @@ public class YcnhChiTiet {
 
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
-    public String getYcnhId() { return ycnhId; }
-    public void setYcnhId(String ycnhId) { this.ycnhId = ycnhId; }
+    public String getRequestId() { return requestId; }
+    public void setRequestId(String requestId) { this.requestId = requestId; }
     public String getMerchandiseCode() { return merchandiseCode; }
     public void setMerchandiseCode(String merchandiseCode) { this.merchandiseCode = merchandiseCode; }
     public int getQuantity() { return quantity; }
@@ -36,7 +36,8 @@ public class YcnhChiTiet {
     public String getUiAction() { return uiAction; }
     public void setUiAction(String uiAction) { this.uiAction = uiAction; }
 
-    public YcnhChiTiet clone() {
-        return new YcnhChiTiet(this.id, this.ycnhId, this.merchandiseCode, this.quantity, this.unit, this.desiredDeliveryDate);
+    public ImportRequestDetail clone() {
+        return new ImportRequestDetail(this.id, this.requestId, this.merchandiseCode, this.quantity, this.unit, this.desiredDeliveryDate);
     }
 }
+

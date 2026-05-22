@@ -32,3 +32,4 @@ public class SessionManager {
         currentUser = null;
     }
 }
+

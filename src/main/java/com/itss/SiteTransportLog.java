@@ -33,3 +33,4 @@ public class SiteTransportLog {
     public String getChangedBy() { return changedBy; }
     public String getChangedAt() { return changedAt; }
 }
+
