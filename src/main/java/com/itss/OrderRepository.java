@@ -60,6 +60,37 @@ public class OrderRepository {
         return list;
     }
 
+    public ObservableList<InternationalOrder> findOrdersBySite(String siteCode) {
+        ObservableList<InternationalOrder> list = FXCollections.observableArrayList();
+        String sql = "SELECT * FROM international_orders WHERE site_code = ? ORDER BY id DESC";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, siteCode);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                list.add(new InternationalOrder(
+                    rs.getInt("id"), rs.getString("ycnh_id"), rs.getString("site_code"),
+                    rs.getString("merchandise_code"), rs.getInt("qty"),
+                    rs.getString("shipping_method"), rs.getString("status"),
+                    rs.getString("created_at")
+                ));
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public boolean updateOrderStatus(int orderId, String status) {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("UPDATE international_orders SET status = ? WHERE id = ?")) {
+            ps.setString(1, status);
+            ps.setInt(2, orderId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public ObservableList<CancellationRequest> getPendingCancellations() {
         ObservableList<CancellationRequest> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM order_cancellation_requests WHERE status = 'CHỜ DUYỆT' ORDER BY requested_at DESC";

@@ -21,11 +21,13 @@ public class OverseasScreen {
     private VBox contentArea;
     private AllocationController allocationController;
     private CancellationController cancellationController;
+    private SiteManagementController siteManagementController;
 
     public OverseasScreen(Main mainApp) {
         this.mainApp = mainApp;
         this.allocationController = new AllocationController();
         this.cancellationController = new CancellationController();
+        this.siteManagementController = new SiteManagementController();
         buildView();
         showRequestManagement();
     }
@@ -163,7 +165,91 @@ public class OverseasScreen {
     // ================= 2. QUẢN LÝ SITE =================
     private void showSiteManagement() {
         contentArea.getChildren().clear();
-        contentArea.getChildren().add(new Label("Tính năng Quản lý Danh Mục Site (Tham khảo SiteScreen)"));
+        Label title = new Label("Quản lý Danh Mục Site & Thông tin vận chuyển");
+        title.getStyleClass().add("header-title");
+
+        TableView<Site> table = new TableView<>();
+        table.getStyleClass().add("table-view");
+        
+        TableColumn<Site, String> cCode = new TableColumn<>("Mã Site");
+        cCode.setCellValueFactory(new PropertyValueFactory<>("siteCode"));
+        TableColumn<Site, String> cName = new TableColumn<>("Tên Site");
+        cName.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Site, Integer> cShip = new TableColumn<>("Ngày đường biển");
+        cShip.setCellValueFactory(new PropertyValueFactory<>("daysShip"));
+        TableColumn<Site, Integer> cAir = new TableColumn<>("Ngày hàng không");
+        cAir.setCellValueFactory(new PropertyValueFactory<>("daysAir"));
+        TableColumn<Site, String> cInfo = new TableColumn<>("Thông tin khác");
+        cInfo.setCellValueFactory(new PropertyValueFactory<>("otherInfo"));
+
+        table.getColumns().addAll(cCode, cName, cShip, cAir, cInfo);
+        table.setItems(siteManagementController.getAllSites());
+
+        HBox bottomBar = new HBox(10);
+        bottomBar.setPadding(new Insets(10, 0, 0, 0));
+        TextField txtCode = new TextField(); txtCode.setPromptText("Mã Site");
+        TextField txtName = new TextField(); txtName.setPromptText("Tên Site");
+        TextField txtShip = new TextField(); txtShip.setPromptText("Ngày tàu (VD: 30)");
+        TextField txtAir = new TextField(); txtAir.setPromptText("Ngày bay (VD: 5)");
+        TextField txtInfo = new TextField(); txtInfo.setPromptText("Thông tin khác");
+        
+        Button btnAdd = new Button("Thêm Mới"); btnAdd.getStyleClass().add("btn-primary");
+        Button btnUpdate = new Button("Cập Nhật"); btnUpdate.getStyleClass().add("btn-secondary");
+        Button btnDelete = new Button("Xóa"); btnDelete.getStyleClass().add("btn-danger");
+
+        table.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null) {
+                txtCode.setText(newV.getSiteCode());
+                txtName.setText(newV.getName());
+                txtShip.setText(String.valueOf(newV.getDaysShip()));
+                txtAir.setText(String.valueOf(newV.getDaysAir()));
+                txtInfo.setText(newV.getOtherInfo());
+                txtCode.setDisable(true); // Can't change code after creation
+            } else {
+                txtCode.setDisable(false);
+            }
+        });
+
+        btnAdd.setOnAction(e -> {
+            try {
+                if (siteManagementController.addSite(txtCode.getText(), txtName.getText(), Integer.parseInt(txtShip.getText()), Integer.parseInt(txtAir.getText()), txtInfo.getText())) {
+                    table.setItems(siteManagementController.getAllSites());
+                } else {
+                    showAlert("Lỗi", "Thêm thất bại. Mã Site có thể đã tồn tại.");
+                }
+            } catch (Exception ex) { showAlert("Lỗi nhập liệu", "Ngày tàu và ngày bay phải là số nguyên!"); }
+        });
+
+        btnUpdate.setOnAction(e -> {
+            try {
+                int ship = Integer.parseInt(txtShip.getText());
+                int air = Integer.parseInt(txtAir.getText());
+                // Logic cảnh báo nếu thời gian thay đổi bất thường (Yêu cầu của UC004)
+                Site sel = table.getSelectionModel().getSelectedItem();
+                if (sel != null && (Math.abs(sel.getDaysShip() - ship) > 10 || Math.abs(sel.getDaysAir() - air) > 5)) {
+                    Alert warn = new Alert(Alert.AlertType.CONFIRMATION, "Thời gian thay đổi quá lớn. Bạn có chắc chắn?", ButtonType.YES, ButtonType.NO);
+                    warn.showAndWait();
+                    if (warn.getResult() != ButtonType.YES) return;
+                }
+                
+                if (siteManagementController.updateSite(txtCode.getText(), txtName.getText(), ship, air, txtInfo.getText())) {
+                    table.setItems(siteManagementController.getAllSites());
+                }
+            } catch (Exception ex) { showAlert("Lỗi nhập liệu", "Ngày tàu và ngày bay phải là số nguyên!"); }
+        });
+
+        btnDelete.setOnAction(e -> {
+            if (siteManagementController.deleteSite(txtCode.getText())) {
+                table.setItems(siteManagementController.getAllSites());
+            }
+        });
+
+        bottomBar.getChildren().addAll(txtCode, txtName, txtShip, txtAir, txtInfo, btnAdd, btnUpdate, btnDelete);
+
+        VBox card = new VBox(20, title, table, bottomBar);
+        card.getStyleClass().add("card");
+        VBox.setVgrow(table, Priority.ALWAYS);
+        contentArea.getChildren().add(card);
     }
 
     // ================= 3. DANH SÁCH ĐƠN HÀNG ĐÃ ĐẶT =================

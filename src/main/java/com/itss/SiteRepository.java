@@ -40,4 +40,70 @@ public class SiteRepository {
         }
         return list;
     }
+
+    public List<Site> findAllSites() {
+        List<Site> list = new ArrayList<>();
+        String sql = "SELECT * FROM sites ORDER BY id ASC";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new Site(
+                    rs.getInt("id"),
+                    rs.getString("site_code"),
+                    rs.getString("name"),
+                    rs.getInt("days_ship"),
+                    rs.getInt("days_air"),
+                    rs.getString("other_info")
+                ));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public boolean insertSite(Site site) {
+        String sql = "INSERT INTO sites (site_code, name, days_ship, days_air, other_info) VALUES (?, ?, ?, ?, ?)";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, site.getSiteCode());
+            ps.setString(2, site.getName());
+            ps.setInt(3, site.getDaysShip());
+            ps.setInt(4, site.getDaysAir());
+            ps.setString(5, site.getOtherInfo());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateSite(Site site) {
+        String sql = "UPDATE sites SET name = ?, days_ship = ?, days_air = ?, other_info = ? WHERE site_code = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, site.getName());
+            ps.setInt(2, site.getDaysShip());
+            ps.setInt(3, site.getDaysAir());
+            ps.setString(4, site.getOtherInfo());
+            ps.setString(5, site.getSiteCode());
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean deleteSite(String siteCode) {
+        String sql = "DELETE FROM sites WHERE site_code = ?";
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, siteCode);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

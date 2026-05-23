@@ -17,6 +17,14 @@ public class Site {
         this.otherInfo = otherInfo;
     }
 
+    public Site(String siteCode, String name, int daysShip, int daysAir, String otherInfo) {
+        this.siteCode = siteCode;
+        this.name = name;
+        this.daysShip = daysShip;
+        this.daysAir = daysAir;
+        this.otherInfo = otherInfo;
+    }
+
     public int getId() { return id; }
     public String getSiteCode() { return siteCode; }
     public String getName() { return name; }

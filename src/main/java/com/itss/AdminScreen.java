@@ -1,85 +1,91 @@
 package com.itss;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import javafx.scene.layout.*;
 
 public class AdminScreen {
     private Main mainApp;
-    private VBox view;
+    private BorderPane view;
     private TableView<User> table;
     private ObservableList<User> userList;
+    private UserController userController;
 
     public AdminScreen(Main mainApp) {
         this.mainApp = mainApp;
-        buildView();
-        loadData();
-    }
+        this.userController = new UserController();
+        view = new BorderPane();
+        
+        VBox sidebar = new VBox(8);
+        sidebar.getStyleClass().add("sidebar");
+        sidebar.setPrefWidth(240);
 
-    private void buildView() {
-        view = new VBox(15);
-        view.setPadding(new Insets(20));
+        Label lbl = new Label("QUẢN TRỊ VIÊN");
+        lbl.getStyleClass().add("sidebar-title");
 
-        HBox topBar = new HBox(20);
-        Label title = new Label("Quáº£n LÃ½ TÃ i Khoáº£n / Roles");
+        Button btnUsers = new Button("Quản lý người dùng");
+        btnUsers.setMaxWidth(Double.MAX_VALUE);
+        btnUsers.getStyleClass().add("sidebar-btn");
+        
+        Button btnLogout = new Button("Đăng xuất");
+        btnLogout.setMaxWidth(Double.MAX_VALUE);
+        btnLogout.getStyleClass().add("sidebar-btn");
+        btnLogout.setOnAction(e -> { SessionManager.logout(); mainApp.showLoginScreen(); });
+
+        sidebar.getChildren().addAll(lbl, btnUsers, btnLogout);
+        view.setLeft(sidebar);
+
+        HBox topBar = new HBox(10);
+        topBar.setPadding(new Insets(20));
+        Label title = new Label("Quản lý tài khoản người dùng");
         title.getStyleClass().add("header-title");
-        Button btnLogout = new Button("ÄÄƒng xuáº¥t");
-        btnLogout.getStyleClass().add("btn-secondary");
-        btnLogout.setOnAction(e -> {
-            SessionManager.logout();
-            mainApp.showLoginScreen();
-        });
-        topBar.getChildren().addAll(title, btnLogout);
+        topBar.getChildren().add(title);
 
         table = new TableView<>();
         table.getStyleClass().add("table-view");
+        VBox.setVgrow(table, Priority.ALWAYS);
+
         TableColumn<User, Integer> colId = new TableColumn<>("ID");
         colId.setCellValueFactory(new PropertyValueFactory<>("id"));
-        
-        TableColumn<User, String> colUser = new TableColumn<>("TÃªn Ä‘Äƒng nháº­p");
+
+        TableColumn<User, String> colUser = new TableColumn<>("Tài khoản");
         colUser.setCellValueFactory(new PropertyValueFactory<>("username"));
-        
-        TableColumn<User, String> colRole = new TableColumn<>("PhÃ¢n Quyá»n (Role)");
+
+        TableColumn<User, String> colRole = new TableColumn<>("Vai trò (Role)");
         colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
 
-        table.getColumns().addAll(colId, colUser, colRole);
-        table.setPrefHeight(400);
+        TableColumn<User, String> colSite = new TableColumn<>("Site Code");
+        colSite.setCellValueFactory(new PropertyValueFactory<>("siteCode"));
 
-        HBox bottomBar = new HBox(12);
+        table.getColumns().addAll(colId, colUser, colRole, colSite);
+        loadData();
+
+        HBox bottomBar = new HBox(10);
+        bottomBar.setPadding(new Insets(20));
         TextField txtUser = new TextField();
-        txtUser.setPromptText("TÃªn Ä‘Äƒng nháº­p");
-        txtUser.getStyleClass().add("text-field");
+        txtUser.setPromptText("Tài khoản");
         PasswordField txtPass = new PasswordField();
-        txtPass.setPromptText("Máº­t kháº©u");
-        txtPass.getStyleClass().add("password-field");
+        txtPass.setPromptText("Mật khẩu (trống=giữ nguyên)");
         ComboBox<String> cbRole = new ComboBox<>();
-        cbRole.getItems().addAll("BÃ¡n hÃ ng", "Äáº·t hÃ ng quá»‘c táº¿", "Quáº£n lÃ½ kho", "Site", "Admin");
-        cbRole.setValue("BÃ¡n hÃ ng");
-        cbRole.setStyle("-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 6px; -fx-padding: 4px;");
+        cbRole.getItems().addAll("admin", "sales", "overseas", "warehouse", "site");
+        cbRole.setPromptText("Vai trò");
 
-        Button btnAdd = new Button("ThÃªm / Cáº­p nháº­t Role");
+        Button btnAdd = new Button("Thêm / Cập nhật Role");
         btnAdd.getStyleClass().add("btn-primary");
-        Button btnDelete = new Button("XÃ³a");
+        Button btnDelete = new Button("Xóa");
         btnDelete.getStyleClass().add("btn-danger");
 
         btnAdd.setOnAction(e -> {
-            addOrUpdateUser(txtUser.getText(), txtPass.getText(), cbRole.getValue());
+            userController.addOrUpdateUser(txtUser.getText(), txtPass.getText(), cbRole.getValue());
             loadData();
         });
 
         btnDelete.setOnAction(e -> {
             User selected = table.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                deleteUser(selected.getId());
+                userController.deleteUser(selected.getId());
                 loadData();
             }
         });
@@ -96,68 +102,15 @@ public class AdminScreen {
         VBox card = new VBox(20, topBar, table, bottomBar);
         card.getStyleClass().add("card");
         
-        view.getChildren().addAll(card);
+        view.setCenter(card);
     }
 
     private void loadData() {
-        userList = FXCollections.observableArrayList();
-        try (Connection conn = Database.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT * FROM users ORDER BY id ASC")) {
-            while (rs.next()) {
-                userList.add(new User(rs.getInt("id"), rs.getString("username"), rs.getString("role"), rs.getString("site_code")));
-            }
-            table.setItems(userList);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        userList = userController.getAllUsers();
+        table.setItems(userList);
     }
 
-    private void deleteUser(int id) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM users WHERE id = ?")) {
-            pstmt.setInt(1, id);
-            pstmt.executeUpdate();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void addOrUpdateUser(String user, String pass, String role) {
-        if(user.isEmpty()) return;
-        try (Connection conn = Database.getConnection()) {
-            PreparedStatement check = conn.prepareStatement("SELECT * FROM users WHERE username = ?");
-            check.setString(1, user);
-            ResultSet rs = check.executeQuery();
-            if (rs.next()) {
-                // update role (and password if not empty)
-                String sql = pass.isEmpty() ? "UPDATE users SET role = ? WHERE username = ?" 
-                                            : "UPDATE users SET role = ?, password = ? WHERE username = ?";
-                PreparedStatement update = conn.prepareStatement(sql);
-                update.setString(1, role);
-                if (pass.isEmpty()) {
-                    update.setString(2, user);
-                } else {
-                    update.setString(2, pass);
-                    update.setString(3, user);
-                }
-                update.executeUpdate();
-            } else {
-                // insert
-                if(pass.isEmpty()) pass = user + "123";
-                PreparedStatement insert = conn.prepareStatement("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
-                insert.setString(1, user);
-                insert.setString(2, pass);
-                insert.setString(3, role);
-                insert.executeUpdate();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public VBox getView() {
+    public BorderPane getView() {
         return view;
     }
 }
-

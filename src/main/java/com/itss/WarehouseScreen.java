@@ -79,6 +79,7 @@ public class WarehouseScreen {
             InternationalOrder sel = table.getSelectionModel().getSelectedItem();
             if (sel != null) {
                 if(controller.receiveFullOrder(sel.getId())) {
+                    showGRNPopup(sel);
                     showCheckIn();
                 } else {
                     showAlert("Lỗi", "Không thể cập nhật trạng thái.");
@@ -110,7 +111,7 @@ public class WarehouseScreen {
         layout.setPadding(new Insets(20));
 
         ComboBox<String> cbReason = new ComboBox<>();
-        cbReason.getItems().addAll("Thiếu hàng", "Hàng hỏng/vỡ", "Sai quy cách/màu sắc");
+        cbReason.getItems().addAll("Thiếu hàng", "Hàng hỏng/vỡ", "Sai quy cách/màu sắc", "Thừa hàng (Lưu kho tạm 7 ngày)");
         cbReason.setPromptText("Lý do sai lệch");
         cbReason.setStyle("-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 6px; -fx-padding: 4px;");
 
@@ -150,6 +151,7 @@ public class WarehouseScreen {
             String user = SessionManager.getCurrentUser().getUsername();
             if (controller.reportDiscrepancy(order, cbReason.getValue(), qty, txtEvidence.getText(), txtNote.getText(), user)) {
                 showAlert("Thành công", "Đã lập biên bản sai lệch.");
+                showRTNPopup(order, cbReason.getValue(), qty);
                 stage.close();
             } else {
                 showAlert("Lỗi", "Có lỗi xảy ra khi lưu biên bản.");
@@ -169,6 +171,37 @@ public class WarehouseScreen {
         a.setTitle(title);
         a.setHeaderText(null);
         a.setContentText(msg);
+        a.showAndWait();
+    }
+
+    private void showGRNPopup(InternationalOrder order) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle("In Phiếu Nhập Kho (GRN)");
+        a.setHeaderText("GOODS RECEIPT NOTE (MÔ PHỎNG)");
+        String content = "Mã đơn hàng: " + order.getId() + "\n"
+                       + "Mã mặt hàng: " + order.getMerchandiseCode() + "\n"
+                       + "Số lượng nhập: " + order.getQty() + "\n"
+                       + "Trạng thái: Đã xác nhận nguyên vẹn\n\n"
+                       + "*** Đang gửi tín hiệu máy in... ***";
+        a.setContentText(content);
+        a.showAndWait();
+    }
+
+    private void showRTNPopup(InternationalOrder order, String reason, int qty) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle("In Biên Bản / Phiếu Xuất Trả (RTN)");
+        a.setHeaderText("RETURN TO VENDOR NOTE (MÔ PHỎNG)");
+        String content = "Mã đơn hàng: " + order.getId() + "\n"
+                       + "Mã mặt hàng: " + order.getMerchandiseCode() + "\n"
+                       + "Loại sai lệch: " + reason + "\n"
+                       + "Số lượng sai lệch: " + qty + "\n";
+        
+        if (reason.contains("Thừa hàng")) {
+            content += "\n[!] Ghi chú: Hàng thừa sẽ được lưu kho tạm trong 7 ngày chờ xử lý.";
+        }
+        
+        content += "\n\n*** Đang gửi tín hiệu máy in... ***";
+        a.setContentText(content);
         a.showAndWait();
     }
 

@@ -38,19 +38,19 @@ public class Main extends Application {
         if (user == null) return;
 
         Scene nextScene;
-        if (user.getRole().equalsIgnoreCase("Admin")) {
+        if (user.getRole().equalsIgnoreCase("admin")) {
             nextScene = createStyledScene(new AdminScreen(this).getView(), 1000, 700);
             primaryStage.setTitle("Admin Dashboard");
-        } else if (user.getRole().equalsIgnoreCase("BÃ¡n hÃ ng") || user.getRole().equalsIgnoreCase("banhang")) {
+        } else if (user.getRole().equalsIgnoreCase("sales") || user.getRole().equalsIgnoreCase("banhang")) {
             nextScene = createStyledScene(new SalesScreen(this).getView(), 1100, 750);
-            primaryStage.setTitle("Sales Dashboard - Quáº£n lÃ½ ImportRequest");
-        } else if (user.getRole().equalsIgnoreCase("Äáº·t hÃ ng quá»‘c táº¿")) {
+            primaryStage.setTitle("Sales Dashboard - Quản lý Yêu cầu Nhập hàng");
+        } else if (user.getRole().equalsIgnoreCase("overseas")) {
             nextScene = createStyledScene(new OverseasScreen(this).getView(), 1100, 750);
             primaryStage.setTitle("Overseas Order Dashboard");
-        } else if (user.getRole().equalsIgnoreCase("Quáº£n lÃ½ kho")) {
+        } else if (user.getRole().equalsIgnoreCase("warehouse")) {
             nextScene = createStyledScene(new WarehouseScreen(this).getView(), 1100, 750);
             primaryStage.setTitle("Warehouse Dashboard");
-        } else if (user.getRole().equalsIgnoreCase("Site")) {
+        } else if (user.getRole().equalsIgnoreCase("site")) {
             nextScene = createStyledScene(new SiteScreen(this).getView(), 1100, 750);
             primaryStage.setTitle("Site Dashboard");
         } else {
@@ -58,7 +58,7 @@ public class Main extends Application {
             VBox placeholder = new VBox(20);
             placeholder.setAlignment(Pos.CENTER);
             placeholder.getChildren().add(new Label("Welcome " + user.getRole()));
-            javafx.scene.control.Button btnLogout = new javafx.scene.control.Button("ÄÄƒng xuáº¥t");
+            javafx.scene.control.Button btnLogout = new javafx.scene.control.Button("Đăng xuất");
             btnLogout.setOnAction(e -> {
                 SessionManager.logout();
                 showLoginScreen();
