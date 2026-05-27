@@ -1,23 +1,38 @@
-package com.itss;
-import com.system.Main;
+package com.system.ui.site;
 
+import com.system.Main;
+import com.system.application.site.ManageSiteInventoryUseCase;
+import com.system.application.site.ProcessSiteOrderUseCase;
+import com.system.application.overseas.ManageSiteUseCase;
+import com.itss.InternationalOrder;
+import com.itss.Site;
+import com.itss.SiteInventoryItem;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 
-public class SiteScreen {
-    private com.system.Main mainApp;
+public class UI_SiteDashboard {
+    private Main mainApp;
     private BorderPane view;
     private VBox contentArea;
-    private SiteOrderController siteOrderController;
-    private SiteInventoryController siteInventoryController;
+    
+    private ProcessSiteOrderUseCase processOrderUseCase;
+    private ManageSiteInventoryUseCase inventoryUseCase;
+    private ManageSiteUseCase siteProfileUseCase;
 
-    public SiteScreen(com.system.Main mainApp) {
+    public UI_SiteDashboard(Main mainApp) {
         this.mainApp = mainApp;
-        this.siteOrderController = new SiteOrderController();
-        this.siteInventoryController = new SiteInventoryController();
+        this.processOrderUseCase = new ProcessSiteOrderUseCase();
+        this.inventoryUseCase = new ManageSiteInventoryUseCase();
+        this.siteProfileUseCase = new ManageSiteUseCase();
+        
+        buildView();
+        showOrders();
+    }
+
+    private void buildView() {
         view = new BorderPane();
         
         VBox sidebar = new VBox(8);
@@ -45,16 +60,18 @@ public class SiteScreen {
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
-        btnLogout.setOnAction(e -> { com.system.application.auth.SessionManager.logout(); mainApp.showLoginScreen(); });
+        btnLogout.setOnAction(e -> {
+            com.system.application.auth.SessionManager.logout();
+            mainApp.showLoginScreen();
+        });
 
-        sidebar.getChildren().addAll(lbl, btnOrder, btnInventory, btnProfile, btnLogout);
+        Region spacer = new Region(); VBox.setVgrow(spacer, Priority.ALWAYS);
+        sidebar.getChildren().addAll(lbl, btnOrder, btnInventory, btnProfile, spacer, btnLogout);
         view.setLeft(sidebar);
 
         contentArea = new VBox();
         contentArea.setPadding(new Insets(20));
         view.setCenter(contentArea);
-        
-        showOrders();
     }
 
     private void showProfile() {
@@ -65,8 +82,7 @@ public class SiteScreen {
         String siteCode = com.system.application.auth.SessionManager.getCurrentUser() != null ? com.system.application.auth.SessionManager.getCurrentUser().getSiteCode() : null;
         if (siteCode == null) return;
 
-        SiteManagementController smc = new SiteManagementController();
-        Site currentSite = smc.getAllSites().stream().filter(s -> s.getSiteCode().equals(siteCode)).findFirst().orElse(null);
+        Site currentSite = siteProfileUseCase.getAllSites().stream().filter(s -> s.getSiteCode().equals(siteCode)).findFirst().orElse(null);
 
         VBox form = new VBox(15);
         form.setPadding(new Insets(20));
@@ -89,12 +105,13 @@ public class SiteScreen {
         btnSave.getStyleClass().add("btn-primary");
         btnSave.setOnAction(e -> {
             try {
-                if (smc.updateSite(siteCode, txtName.getText(), Integer.parseInt(txtShip.getText()), Integer.parseInt(txtAir.getText()), txtInfo.getText())) {
-                    Alert a = new Alert(Alert.AlertType.INFORMATION); a.setContentText("Cập nhật thành công!"); a.showAndWait();
-                } else {
-                    Alert a = new Alert(Alert.AlertType.ERROR); a.setContentText("Cập nhật thất bại!"); a.showAndWait();
-                }
-            } catch (Exception ex) {}
+                int ship = Integer.parseInt(txtShip.getText());
+                int air = Integer.parseInt(txtAir.getText());
+                siteProfileUseCase.updateSite(siteCode, txtName.getText(), ship, air, txtInfo.getText());
+                showSuccessPopup("Cập nhật thành công!");
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
+            }
         });
 
         form.getChildren().addAll(
@@ -123,22 +140,22 @@ public class SiteScreen {
         table.getColumns().addAll(c1, c2, c3, c4, c5);
 
         String siteCode = com.system.application.auth.SessionManager.getCurrentUser() != null ? com.system.application.auth.SessionManager.getCurrentUser().getSiteCode() : null;
-        ObservableList<InternationalOrder> list = siteOrderController.getOrdersForSite(siteCode);
-        table.setItems(list);
+        table.setItems(processOrderUseCase.getOrdersForSite(siteCode));
 
         Button btnProc = new Button("Giao hàng & Cập nhật tồn kho");
         btnProc.getStyleClass().add("btn-primary");
         btnProc.setOnAction(e -> {
             InternationalOrder selected = table.getSelectionModel().getSelectedItem();
             if (selected == null) {
-                Alert a = new Alert(Alert.AlertType.WARNING); a.setContentText("Vui lòng chọn 1 đơn hàng!"); a.showAndWait();
+                showAlert("Cảnh báo", "Vui lòng chọn 1 đơn hàng!");
                 return;
             }
-            if (siteOrderController.shipOrder(selected.getId())) {
-                Alert a = new Alert(Alert.AlertType.INFORMATION); a.setContentText("Giao hàng thành công!"); a.showAndWait();
+            try {
+                processOrderUseCase.shipOrder(selected.getId());
+                showSuccessPopup("Giao hàng thành công!");
                 showOrders(); // reload
-            } else {
-                Alert a = new Alert(Alert.AlertType.ERROR); a.setContentText("Giao hàng thất bại!"); a.showAndWait();
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
             }
         });
 
@@ -166,7 +183,7 @@ public class SiteScreen {
         table.getColumns().addAll(cId, cMerch, cQty);
 
         String siteCode = com.system.application.auth.SessionManager.getCurrentUser() != null ? com.system.application.auth.SessionManager.getCurrentUser().getSiteCode() : null;
-        table.setItems(siteInventoryController.getInventory(siteCode));
+        table.setItems(inventoryUseCase.getInventory(siteCode));
 
         HBox bottomBar = new HBox(10);
         bottomBar.setPadding(new Insets(10, 0, 0, 0));
@@ -189,25 +206,40 @@ public class SiteScreen {
 
         btnAdd.setOnAction(e -> {
             try {
-                if (siteInventoryController.addInventory(siteCode, txtMerch.getText(), Integer.parseInt(txtQty.getText()))) {
-                    table.setItems(siteInventoryController.getInventory(siteCode));
-                }
-            } catch (Exception ex) {}
+                int qty = Integer.parseInt(txtQty.getText());
+                inventoryUseCase.addInventory(siteCode, txtMerch.getText(), qty);
+                table.setItems(inventoryUseCase.getInventory(siteCode));
+                showSuccessPopup("Thêm hàng thành công.");
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
+            }
         });
 
         btnUpdate.setOnAction(e -> {
             try {
                 SiteInventoryItem sel = table.getSelectionModel().getSelectedItem();
-                if (sel != null && siteInventoryController.updateInventory(sel.getId(), Integer.parseInt(txtQty.getText()))) {
-                    table.setItems(siteInventoryController.getInventory(siteCode));
+                if (sel != null) {
+                    int qty = Integer.parseInt(txtQty.getText());
+                    int oldQty = sel.getStockQty();
+                    inventoryUseCase.updateInventory(sel.getId(), qty, oldQty);
+                    table.setItems(inventoryUseCase.getInventory(siteCode));
+                    showSuccessPopup("Cập nhật thành công.");
                 }
-            } catch (Exception ex) {}
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
+            }
         });
 
         btnDelete.setOnAction(e -> {
-            SiteInventoryItem sel = table.getSelectionModel().getSelectedItem();
-            if (sel != null && siteInventoryController.deleteInventory(sel.getId())) {
-                table.setItems(siteInventoryController.getInventory(siteCode));
+            try {
+                SiteInventoryItem sel = table.getSelectionModel().getSelectedItem();
+                if (sel != null) {
+                    inventoryUseCase.deleteInventory(sel.getId());
+                    table.setItems(inventoryUseCase.getInventory(siteCode));
+                    showSuccessPopup("Xóa thành công.");
+                }
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
             }
         });
 
@@ -218,6 +250,9 @@ public class SiteScreen {
         VBox.setVgrow(table, Priority.ALWAYS);
         contentArea.getChildren().addAll(card);
     }
+
+    private void showAlert(String title, String msg) { Alert a = new Alert(Alert.AlertType.WARNING); a.setTitle(title); a.setContentText(msg); a.showAndWait(); }
+    private void showSuccessPopup(String msg) { Alert a = new Alert(Alert.AlertType.INFORMATION); a.setTitle("Thành công"); a.setHeaderText(null); a.setContentText(msg); a.showAndWait(); }
 
     public BorderPane getView() { return view; }
 }

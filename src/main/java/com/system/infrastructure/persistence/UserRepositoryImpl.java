@@ -1,5 +1,6 @@
-package com.itss;
+package com.system.infrastructure.persistence;
 
+import com.itss.User;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,11 +8,11 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserRepository {
+public class UserRepositoryImpl {
     
     public List<User> findAllUsers() {
         List<User> list = new ArrayList<>();
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM users ORDER BY id ASC")) {
             while (rs.next()) {
@@ -28,18 +29,19 @@ public class UserRepository {
         return list;
     }
 
-    public void deleteUser(int id) {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+    public boolean deleteUser(int id) {
+        try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement("DELETE FROM users WHERE id = ?")) {
             pstmt.setInt(1, id);
-            pstmt.executeUpdate();
+            return pstmt.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
 
     public User findByUsername(String username) {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement check = conn.prepareStatement("SELECT * FROM users WHERE username = ?")) {
             check.setString(1, username);
             ResultSet rs = check.executeQuery();
@@ -57,8 +59,10 @@ public class UserRepository {
         return null;
     }
 
-    public void updateUser(String username, String pass, String role) {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
+
+
+    public boolean updateUser(String username, String pass, String role) {
+        try (Connection conn = Database.getConnection()) {
             String sql = pass.isEmpty() ? "UPDATE users SET role = ? WHERE username = ?" 
                                         : "UPDATE users SET role = ?, password = ? WHERE username = ?";
             PreparedStatement update = conn.prepareStatement(sql);
@@ -66,25 +70,26 @@ public class UserRepository {
             if (pass.isEmpty()) {
                 update.setString(2, username);
             } else {
-                update.setString(2, pass);
+                update.setString(2, com.system.infrastructure.security.PasswordUtils.hashPassword(pass));
                 update.setString(3, username);
             }
-            update.executeUpdate();
+            return update.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
 
-    public void insertUser(String username, String pass, String role) {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
-            if(pass.isEmpty()) pass = username + "123";
+    public boolean insertUser(String username, String pass, String role) {
+        try (Connection conn = Database.getConnection()) {
             PreparedStatement insert = conn.prepareStatement("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
             insert.setString(1, username);
-            insert.setString(2, pass);
+            insert.setString(2, com.system.infrastructure.security.PasswordUtils.hashPassword(pass));
             insert.setString(3, role);
-            insert.executeUpdate();
+            return insert.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return false;
     }
 }

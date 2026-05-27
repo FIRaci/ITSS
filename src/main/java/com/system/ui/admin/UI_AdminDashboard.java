@@ -1,22 +1,27 @@
-package com.itss;
-import com.system.Main;
+package com.system.ui.admin;
 
-import javafx.collections.ObservableList;
+import com.system.Main;
+import com.system.application.auth.ManageUsersUseCase;
+import com.itss.User;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 
-public class AdminScreen {
-    private com.system.Main mainApp;
+public class UI_AdminDashboard {
+    private Main mainApp;
     private BorderPane view;
     private TableView<User> table;
-    private ObservableList<User> userList;
-    private UserController userController;
+    private ManageUsersUseCase manageUsersUseCase;
 
-    public AdminScreen(com.system.Main mainApp) {
+    public UI_AdminDashboard(Main mainApp) {
         this.mainApp = mainApp;
-        this.userController = new UserController();
+        this.manageUsersUseCase = new ManageUsersUseCase();
+        
+        buildView();
+    }
+
+    private void buildView() {
         view = new BorderPane();
         
         VBox sidebar = new VBox(8);
@@ -33,7 +38,10 @@ public class AdminScreen {
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
-        btnLogout.setOnAction(e -> { com.system.application.auth.SessionManager.logout(); mainApp.showLoginScreen(); });
+        btnLogout.setOnAction(e -> {
+            com.system.application.auth.SessionManager.logout();
+            mainApp.showLoginScreen();
+        });
 
         sidebar.getChildren().addAll(lbl, btnUsers, btnLogout);
         view.setLeft(sidebar);
@@ -79,15 +87,25 @@ public class AdminScreen {
         btnDelete.getStyleClass().add("btn-danger");
 
         btnAdd.setOnAction(e -> {
-            userController.addOrUpdateUser(txtUser.getText(), txtPass.getText(), cbRole.getValue());
-            loadData();
+            try {
+                manageUsersUseCase.addOrUpdateUser(txtUser.getText(), txtPass.getText(), cbRole.getValue());
+                loadData();
+                showSuccessPopup("Thêm/Cập nhật thành công.");
+            } catch (Exception ex) {
+                showAlert("Lỗi", ex.getMessage());
+            }
         });
 
         btnDelete.setOnAction(e -> {
             User selected = table.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                userController.deleteUser(selected.getId());
-                loadData();
+                try {
+                    manageUsersUseCase.deleteUser(selected.getId());
+                    loadData();
+                    showSuccessPopup("Xóa thành công.");
+                } catch (Exception ex) {
+                    showAlert("Lỗi", ex.getMessage());
+                }
             }
         });
 
@@ -107,9 +125,11 @@ public class AdminScreen {
     }
 
     private void loadData() {
-        userList = userController.getAllUsers();
-        table.setItems(userList);
+        table.setItems(manageUsersUseCase.getAllUsers());
     }
+
+    private void showAlert(String title, String msg) { Alert a = new Alert(Alert.AlertType.WARNING); a.setTitle(title); a.setContentText(msg); a.showAndWait(); }
+    private void showSuccessPopup(String msg) { Alert a = new Alert(Alert.AlertType.INFORMATION); a.setTitle("Thành công"); a.setHeaderText(null); a.setContentText(msg); a.showAndWait(); }
 
     public BorderPane getView() {
         return view;

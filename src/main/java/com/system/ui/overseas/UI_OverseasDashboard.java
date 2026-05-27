@@ -1,34 +1,36 @@
-package com.itss;
-import com.system.Main;
+package com.system.ui.overseas;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import com.system.Main;
+import com.system.application.overseas.ManageCancellationUseCase;
+import com.system.application.overseas.ManageSiteUseCase;
+import com.system.application.request.ViewRequestDetailUseCase;
+import com.system.infrastructure.persistence.OrderRepositoryImpl;
+import com.itss.CancellationRequest;
+import com.itss.ImportRequest;
+import com.itss.InternationalOrder;
+import com.itss.Site;
 import javafx.geometry.Insets;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
-import javafx.stage.Modality;
-import javafx.stage.Stage;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.List;
-
-public class OverseasScreen {
-    private com.system.Main mainApp;
+public class UI_OverseasDashboard {
+    private Main mainApp;
     private BorderPane view;
     private VBox contentArea;
-    private AllocationController allocationController;
-    private CancellationController cancellationController;
-    private SiteManagementController siteManagementController;
+    
+    private ManageSiteUseCase manageSiteUseCase;
+    private ManageCancellationUseCase manageCancellationUseCase;
+    private ViewRequestDetailUseCase viewRequestUseCase;
+    private OrderRepositoryImpl orderRepository;
 
-    public OverseasScreen(com.system.Main mainApp) {
+    public UI_OverseasDashboard(Main mainApp) {
         this.mainApp = mainApp;
-        this.allocationController = new AllocationController();
-        this.cancellationController = new CancellationController();
-        this.siteManagementController = new SiteManagementController();
+        this.manageSiteUseCase = new ManageSiteUseCase();
+        this.manageCancellationUseCase = new ManageCancellationUseCase();
+        this.viewRequestUseCase = new ViewRequestDetailUseCase();
+        this.orderRepository = new OrderRepositoryImpl();
+        
         buildView();
         showRequestManagement();
     }
@@ -99,13 +101,7 @@ public class OverseasScreen {
         colDate.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         table.getColumns().addAll(colId, colStatus, colAcp, colDate);
 
-        ObservableList<ImportRequest> list = FXCollections.observableArrayList();
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT * FROM ImportRequest ORDER BY created_at DESC")) {
-            ResultSet rs = ps.executeQuery();
-            while(rs.next()) list.add(new ImportRequest(rs.getString("id"), rs.getString("status"), rs.getBoolean("is_accepted"), "", rs.getString("created_at")));
-        } catch (Exception e) {}
-        table.setItems(list);
+        table.setItems(viewRequestUseCase.getAllRequests(""));
 
         Button btnProcess = new Button("Tiếp nhận & Tính toán chọn Site (Gửi đơn)");
         btnProcess.getStyleClass().add("btn-primary");
@@ -114,53 +110,17 @@ public class OverseasScreen {
 
         btnProcess.setOnAction(e -> {
             ImportRequest sel = table.getSelectionModel().getSelectedItem();
-            processRequest(sel.getId());
-            showRequestManagement(); // reload
+            if (sel != null) {
+                new UI_OrderAllocationForm().show(sel.getId(), () -> {
+                    table.setItems(viewRequestUseCase.getAllRequests(""));
+                });
+            }
         });
 
         VBox card = new VBox(20, title, table, btnProcess);
         card.getStyleClass().add("card");
         VBox.setVgrow(table, Priority.ALWAYS);
         contentArea.getChildren().addAll(card);
-    }
-
-    private void processRequest(String requestId) {
-        List<AllocationRow> plan = allocationController.calculatePlan(requestId);
-        if (plan.isEmpty()) {
-            showAlert("Không thể lập kế hoạch", "Không có phương án phù hợp hoặc dữ liệu tồn kho không đủ.");
-            return;
-        }
-
-        Stage stage = new Stage();
-        stage.initModality(Modality.APPLICATION_MODAL);
-        stage.setTitle("Kế hoạch chọn Site");
-
-        VBox layout = new VBox(10);
-        layout.setPadding(new Insets(20));
-
-        TableView<AllocationRow> table = new TableView<>();
-        table.getStyleClass().add("table-view");
-        TableColumn<AllocationRow, String> c1 = new TableColumn<>("Mã hàng"); c1.setCellValueFactory(new PropertyValueFactory<>("merchandiseCode"));
-        TableColumn<AllocationRow, String> c2 = new TableColumn<>("Site"); c2.setCellValueFactory(new PropertyValueFactory<>("siteCode"));
-        TableColumn<AllocationRow, Integer> c3 = new TableColumn<>("Số lượng"); c3.setCellValueFactory(new PropertyValueFactory<>("qty"));
-        TableColumn<AllocationRow, String> c4 = new TableColumn<>("Vận chuyển"); c4.setCellValueFactory(new PropertyValueFactory<>("shippingMethod"));
-        table.getColumns().addAll(c1, c2, c3, c4);
-        table.setItems(FXCollections.observableArrayList(plan));
-
-        Button btnConfirm = new Button("Xác nhận & Gửi đơn");
-        btnConfirm.getStyleClass().add("btn-primary");
-        btnConfirm.setOnAction(e -> {
-            if (allocationController.submitOrders(requestId, plan)) {
-                stage.close();
-                showAlert("Thành công", "Đã phân bổ Site và gửi đơn hàng thành công!");
-            }
-        });
-
-        layout.getChildren().addAll(new Label("Dự thảo kế hoạch:"), table, btnConfirm);
-        Scene scene = new Scene(layout, 800, 500);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
-        stage.setScene(scene);
-        stage.show();
     }
 
     // ================= 2. QUẢN LÝ SITE =================
@@ -184,7 +144,7 @@ public class OverseasScreen {
         cInfo.setCellValueFactory(new PropertyValueFactory<>("otherInfo"));
 
         table.getColumns().addAll(cCode, cName, cShip, cAir, cInfo);
-        table.setItems(siteManagementController.getAllSites());
+        table.setItems(manageSiteUseCase.getAllSites());
 
         HBox bottomBar = new HBox(10);
         bottomBar.setPadding(new Insets(10, 0, 0, 0));
@@ -213,36 +173,34 @@ public class OverseasScreen {
 
         btnAdd.setOnAction(e -> {
             try {
-                if (siteManagementController.addSite(txtCode.getText(), txtName.getText(), Integer.parseInt(txtShip.getText()), Integer.parseInt(txtAir.getText()), txtInfo.getText())) {
-                    table.setItems(siteManagementController.getAllSites());
-                } else {
-                    showAlert("Lỗi", "Thêm thất bại. Mã Site có thể đã tồn tại.");
-                }
-            } catch (Exception ex) { showAlert("Lỗi nhập liệu", "Ngày tàu và ngày bay phải là số nguyên!"); }
+                manageSiteUseCase.addSite(txtCode.getText(), txtName.getText(), Integer.parseInt(txtShip.getText()), Integer.parseInt(txtAir.getText()), txtInfo.getText());
+                table.setItems(manageSiteUseCase.getAllSites());
+                showSuccessPopup("Đã thêm Site.");
+            } catch (Exception ex) { showAlert("Lỗi", ex.getMessage()); }
         });
 
         btnUpdate.setOnAction(e -> {
             try {
                 int ship = Integer.parseInt(txtShip.getText());
                 int air = Integer.parseInt(txtAir.getText());
-                // Logic cảnh báo nếu thời gian thay đổi bất thường (Yêu cầu của UC004)
                 Site sel = table.getSelectionModel().getSelectedItem();
                 if (sel != null && (Math.abs(sel.getDaysShip() - ship) > 10 || Math.abs(sel.getDaysAir() - air) > 5)) {
                     Alert warn = new Alert(Alert.AlertType.CONFIRMATION, "Thời gian thay đổi quá lớn. Bạn có chắc chắn?", ButtonType.YES, ButtonType.NO);
                     warn.showAndWait();
                     if (warn.getResult() != ButtonType.YES) return;
                 }
-                
-                if (siteManagementController.updateSite(txtCode.getText(), txtName.getText(), ship, air, txtInfo.getText())) {
-                    table.setItems(siteManagementController.getAllSites());
-                }
-            } catch (Exception ex) { showAlert("Lỗi nhập liệu", "Ngày tàu và ngày bay phải là số nguyên!"); }
+                manageSiteUseCase.updateSite(txtCode.getText(), txtName.getText(), ship, air, txtInfo.getText());
+                table.setItems(manageSiteUseCase.getAllSites());
+                showSuccessPopup("Cập nhật Site thành công.");
+            } catch (Exception ex) { showAlert("Lỗi", ex.getMessage()); }
         });
 
         btnDelete.setOnAction(e -> {
-            if (siteManagementController.deleteSite(txtCode.getText())) {
-                table.setItems(siteManagementController.getAllSites());
-            }
+            try {
+                manageSiteUseCase.deleteSite(txtCode.getText());
+                table.setItems(manageSiteUseCase.getAllSites());
+                showSuccessPopup("Xóa thành công.");
+            } catch(Exception ex) { showAlert("Lỗi", ex.getMessage()); }
         });
 
         bottomBar.getChildren().addAll(txtCode, txtName, txtShip, txtAir, txtInfo, btnAdd, btnUpdate, btnDelete);
@@ -270,8 +228,7 @@ public class OverseasScreen {
         TableColumn<InternationalOrder, String> c7 = new TableColumn<>("Trạng thái"); c7.setCellValueFactory(new PropertyValueFactory<>("status"));
 
         table.getColumns().addAll(c1, c2, c3, c4, c5, c6, c7);
-        OrderRepository orderRepo = new OrderRepository();
-        table.setItems(orderRepo.findAllOrders());
+        table.setItems(orderRepository.findAllOrders());
 
         VBox card = new VBox(20, title, table);
         card.getStyleClass().add("card");
@@ -279,10 +236,10 @@ public class OverseasScreen {
         contentArea.getChildren().addAll(card);
     }
 
-    // ================= 4. XỬ LÝ HỦY ĐƠN HÀNG (UC04) =================
+    // ================= 4. XỬ LÝ HỦY ĐƠN HÀNG =================
     private void showCancellationManagement() {
         contentArea.getChildren().clear();
-        Label title = new Label("Phê duyệt Yêu Cầu Hủy Đơn Hàng (Từ Warehouse)");
+        Label title = new Label("Phê duyệt Yêu Cầu Hủy Đơn Hàng (Từ Warehouse / Site)");
         title.getStyleClass().add("header-title");
 
         TableView<CancellationRequest> table = new TableView<>();
@@ -294,7 +251,7 @@ public class OverseasScreen {
         TableColumn<CancellationRequest, String> c5 = new TableColumn<>("Thời gian"); c5.setCellValueFactory(new PropertyValueFactory<>("requestedAt"));
 
         table.getColumns().addAll(c1, c2, c3, c4, c5);
-        table.setItems(cancellationController.getPendingCancellations());
+        table.setItems(manageCancellationUseCase.getPendingCancellations());
 
         Button btnApprove = new Button("Duyệt Hủy"); btnApprove.getStyleClass().add("btn-danger");
         Button btnReject = new Button("Từ chối Hủy"); btnReject.getStyleClass().add("btn-secondary");
@@ -309,20 +266,22 @@ public class OverseasScreen {
         btnApprove.setOnAction(e -> {
             CancellationRequest sel = table.getSelectionModel().getSelectedItem();
             if(sel != null) {
-                if(cancellationController.approveCancellation(sel.getId(), sel.getOrderId())) {
+                try {
+                    manageCancellationUseCase.approveCancellation(sel.getId(), sel.getOrderId());
                     showSuccessPopup("Đã duyệt hủy đơn hàng!");
-                    table.setItems(cancellationController.getPendingCancellations());
-                }
+                    table.setItems(manageCancellationUseCase.getPendingCancellations());
+                } catch(Exception ex) { showAlert("Lỗi", ex.getMessage()); }
             }
         });
 
         btnReject.setOnAction(e -> {
             CancellationRequest sel = table.getSelectionModel().getSelectedItem();
             if(sel != null) {
-                if(cancellationController.rejectCancellation(sel.getId(), sel.getOrderId())) {
+                try {
+                    manageCancellationUseCase.rejectCancellation(sel.getId(), sel.getOrderId());
                     showSuccessPopup("Đã từ chối yêu cầu hủy!");
-                    table.setItems(cancellationController.getPendingCancellations());
-                }
+                    table.setItems(manageCancellationUseCase.getPendingCancellations());
+                } catch(Exception ex) { showAlert("Lỗi", ex.getMessage()); }
             }
         });
 

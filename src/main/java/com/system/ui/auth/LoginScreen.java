@@ -26,9 +26,9 @@ public class LoginScreen {
         card.setAlignment(Pos.CENTER);
         card.setMaxWidth(400);
 
-        Label title = new Label("ÄÄƒng Nháº­p");
+        Label title = new Label("Đăng Nhập");
         title.getStyleClass().add("header-title");
-        Label subtitle = new Label("Há»‡ thá»‘ng Quáº£n lÃ½ BÃ¡n hÃ ng & Tá»“n kho");
+        Label subtitle = new Label("Hệ thống Quản lý Bán hàng & Tồn kho");
         subtitle.setStyle("-fx-text-fill: #64748b; -fx-font-size: 14px;");
 
         VBox header = new VBox(5, title, subtitle);
@@ -39,28 +39,28 @@ public class LoginScreen {
         grid.setHgap(10);
         grid.setVgap(15);
 
-        Label lblUser = new Label("TÃ i khoáº£n");
+        Label lblUser = new Label("Tài khoản");
         lblUser.setStyle("-fx-font-weight: bold; -fx-text-fill: #334155;");
         TextField txtUser = new TextField();
         txtUser.getStyleClass().add("text-field");
-        txtUser.setPromptText("Nháº­p tÃªn Ä‘Äƒng nháº­p");
+        txtUser.setPromptText("Nhập tên đăng nhập");
 
-        Label lblPass = new Label("Máº­t kháº©u");
+        Label lblPass = new Label("Mật khẩu");
         lblPass.setStyle("-fx-font-weight: bold; -fx-text-fill: #334155;");
         PasswordField txtPass = new PasswordField();
         txtPass.getStyleClass().add("password-field");
-        txtPass.setPromptText("Nháº­p máº­t kháº©u");
+        txtPass.setPromptText("Nhập mật khẩu");
 
         grid.add(lblUser, 0, 0);
         grid.add(txtUser, 0, 1);
         grid.add(lblPass, 0, 2);
         grid.add(txtPass, 0, 3);
         
-        // Cá»‘ Ä‘á»‹nh chiá»u rá»™ng TextField
+        // Cố định chiều rộng TextField
         txtUser.setPrefWidth(280);
         txtPass.setPrefWidth(280);
 
-        Button btnLogin = new Button("ÄÄƒng nháº­p");
+        Button btnLogin = new Button("Đăng nhập");
         btnLogin.getStyleClass().add("btn-primary");
         btnLogin.setMaxWidth(Double.MAX_VALUE);
         btnLogin.setPrefHeight(40);
@@ -74,7 +74,7 @@ public class LoginScreen {
             if (com.system.application.auth.SessionManager.login(u, p)) {
                 mainApp.navigateNext();
             } else {
-                lblError.setText("Sai tÃ i khoáº£n hoáº·c máº­t kháº©u!");
+                lblError.setText("Sai tài khoản hoặc mật khẩu!");
             }
         });
 
@@ -86,4 +86,3 @@ public class LoginScreen {
         return view;
     }
 }
-

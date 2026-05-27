@@ -20,7 +20,7 @@ public class RequestRepositoryImpl {
 
     public ObservableList<com.itss.ImportRequest> findAllMaster(String keyword) {
         ObservableList<com.itss.ImportRequest> list = FXCollections.observableArrayList();
-        String sql = "SELECT * FROM ImportRequest WHERE LOWER(id) LIKE ? ORDER BY created_at DESC";
+        String sql = "SELECT * FROM ycnh WHERE LOWER(id) LIKE ? ORDER BY created_at DESC";
         try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, "%" + keyword + "%");
@@ -77,7 +77,7 @@ public class RequestRepositoryImpl {
                     ps2.executeUpdate();
                 }
                 // Delete master record
-                try(PreparedStatement ps3 = conn.prepareStatement("DELETE FROM ImportRequest WHERE id = ?")) {
+                try(PreparedStatement ps3 = conn.prepareStatement("DELETE FROM ycnh WHERE id = ?")) {
                     ps3.setString(1, id);
                     ps3.executeUpdate();
                 }
@@ -85,6 +85,8 @@ public class RequestRepositoryImpl {
             } catch (Exception ex) {
                 conn.rollback();
                 throw ex;
+            } finally {
+                conn.setAutoCommit(true);
             }
         }
     }
@@ -94,7 +96,7 @@ public class RequestRepositoryImpl {
             conn.setAutoCommit(false);
             try {
                 // 1. Insert Master
-                String sqlMaster = "INSERT INTO ImportRequest (id, created_by) VALUES (?, ?)";
+                String sqlMaster = "INSERT INTO ycnh (id, created_by) VALUES (?, ?)";
                 try(PreparedStatement psM = conn.prepareStatement(sqlMaster)) {
                     psM.setString(1, reqId); psM.setString(2, user); psM.executeUpdate();
                 }
@@ -125,6 +127,8 @@ public class RequestRepositoryImpl {
             } catch (Exception ex) {
                 conn.rollback();
                 throw ex;
+            } finally {
+                conn.setAutoCommit(true);
             }
         }
     }
@@ -164,6 +168,8 @@ public class RequestRepositoryImpl {
             } catch(Exception e) { 
                 conn.rollback(); 
                 throw e; 
+            } finally {
+                conn.setAutoCommit(true);
             }
         }
     }

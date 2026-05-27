@@ -1,5 +1,7 @@
-package com.itss;
+package com.system.infrastructure.persistence;
 
+import com.itss.Site;
+import com.itss.SiteStock;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -7,13 +9,13 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SiteRepository {
+public class SiteRepositoryImpl {
     
     public List<SiteStock> getSiteStocks(String merchandiseCode, LocalDate desiredDate) {
         List<SiteStock> list = new ArrayList<>();
         String sql = "SELECT s.site_code, s.days_ship, s.days_air, inv.stock_qty FROM sites s " +
                 "JOIN site_inventory inv ON s.site_code = inv.site_code WHERE inv.merchandise_code = ?";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, merchandiseCode);
             ResultSet rs = ps.executeQuery();
@@ -44,7 +46,7 @@ public class SiteRepository {
     public List<Site> findAllSites() {
         List<Site> list = new ArrayList<>();
         String sql = "SELECT * FROM sites ORDER BY id ASC";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -65,7 +67,7 @@ public class SiteRepository {
 
     public boolean insertSite(Site site) {
         String sql = "INSERT INTO sites (site_code, name, days_ship, days_air, other_info) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, site.getSiteCode());
             ps.setString(2, site.getName());
@@ -81,7 +83,7 @@ public class SiteRepository {
 
     public boolean updateSite(Site site) {
         String sql = "UPDATE sites SET name = ?, days_ship = ?, days_air = ?, other_info = ? WHERE site_code = ?";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, site.getName());
             ps.setInt(2, site.getDaysShip());
@@ -95,13 +97,46 @@ public class SiteRepository {
         return false;
     }
 
-    public boolean deleteSite(String siteCode) {
-        String sql = "DELETE FROM sites WHERE site_code = ?";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, siteCode);
-            return ps.executeUpdate() > 0;
+    public boolean deleteSite(String siteCode) throws Exception {
+        try (Connection conn = Database.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Check for users
+                try (PreparedStatement checkUsers = conn.prepareStatement("SELECT 1 FROM users WHERE site_code = ?")) {
+                    checkUsers.setString(1, siteCode);
+                    if (checkUsers.executeQuery().next()) {
+                        throw new Exception("Lỗi: Không thể xóa Site vì vẫn còn User trực thuộc!");
+                    }
+                }
+                
+                // Delete children first
+                try (PreparedStatement delInv = conn.prepareStatement("DELETE FROM site_inventory WHERE site_code = ?")) {
+                    delInv.setString(1, siteCode);
+                    delInv.executeUpdate();
+                }
+
+                // Delete parent
+                boolean success;
+                try (PreparedStatement ps = conn.prepareStatement("DELETE FROM sites WHERE site_code = ?")) {
+                    ps.setString(1, siteCode);
+                    success = ps.executeUpdate() > 0;
+                }
+                
+                conn.commit();
+                return success;
+            } catch (Exception e) {
+                conn.rollback();
+                if (e.getMessage() != null && e.getMessage().startsWith("Lỗi:")) {
+                    throw e; // Bubble up specific business logic errors
+                }
+                e.printStackTrace();
+            } finally {
+                conn.setAutoCommit(true);
+            }
         } catch (Exception e) {
+            if (e.getMessage() != null && e.getMessage().startsWith("Lỗi:")) {
+                throw e; // Bubble up
+            }
             e.printStackTrace();
         }
         return false;

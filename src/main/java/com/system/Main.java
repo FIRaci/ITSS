@@ -51,19 +51,19 @@ public class Main extends Application {
 
         Scene nextScene;
         if (user.getRole().equalsIgnoreCase("admin")) {
-            nextScene = createStyledScene(new AdminScreen(this).getView(), 1000, 700);
+            nextScene = createStyledScene(new com.system.ui.admin.UI_AdminDashboard(this).getView(), 1000, 700);
             primaryStage.setTitle("Admin Dashboard");
         } else if (user.getRole().equalsIgnoreCase("sales") || user.getRole().equalsIgnoreCase("banhang")) {
             nextScene = createStyledScene(new com.system.ui.request.UI_RequestList(this).getView(), 1100, 750);
             primaryStage.setTitle("Sales Dashboard - Quản lý Yêu cầu Nhập hàng");
         } else if (user.getRole().equalsIgnoreCase("overseas")) {
-            nextScene = createStyledScene(new OverseasScreen(this).getView(), 1100, 750);
+            nextScene = createStyledScene(new com.system.ui.overseas.UI_OverseasDashboard(this).getView(), 1100, 750);
             primaryStage.setTitle("Overseas Order Dashboard");
         } else if (user.getRole().equalsIgnoreCase("warehouse")) {
-            nextScene = createStyledScene(new WarehouseScreen(this).getView(), 1100, 750);
+            nextScene = createStyledScene(new com.system.ui.warehouse.UI_WarehouseDashboard(this).getView(), 1100, 750);
             primaryStage.setTitle("Warehouse Dashboard");
         } else if (user.getRole().equalsIgnoreCase("site")) {
-            nextScene = createStyledScene(new SiteScreen(this).getView(), 1100, 750);
+            nextScene = createStyledScene(new com.system.ui.site.UI_SiteDashboard(this).getView(), 1100, 750);
             primaryStage.setTitle("Site Dashboard");
         } else {
             VBox placeholder = new VBox(20);

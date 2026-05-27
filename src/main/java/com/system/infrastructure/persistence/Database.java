@@ -6,9 +6,9 @@ import java.sql.SQLException;
 
 public class Database {
     // You should configure these based on your local Postgres setup
-    private static final String URL = "jdbc:postgresql://localhost:5432/ITSS";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "admin"; // Change this if your postgres password is different
+    private static final String URL = System.getenv("DB_URL") != null ? System.getenv("DB_URL") : "jdbc:postgresql://localhost:5432/ITSS";
+    private static final String USER = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : "postgres";
+    private static final String PASSWORD = System.getenv("DB_PASS") != null ? System.getenv("DB_PASS") : "admin";
 
     public static Connection getConnection() throws SQLException {
         try {
