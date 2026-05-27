@@ -69,8 +69,9 @@ public class UI_SiteDashboard {
         sidebar.getChildren().addAll(lbl, btnOrder, btnInventory, btnProfile, spacer, btnLogout);
         view.setLeft(sidebar);
 
-        contentArea = new VBox();
-        contentArea.setPadding(new Insets(20));
+        contentArea = new VBox(16);
+        contentArea.setPadding(new Insets(24));
+        contentArea.getStyleClass().add("content-area");
         view.setCenter(contentArea);
     }
 

@@ -50,8 +50,9 @@ public class UI_WarehouseDashboard {
         sidebar.getChildren().addAll(lbl, btnIn, spacer, btnLogout);
         view.setLeft(sidebar);
 
-        contentArea = new VBox();
-        contentArea.setPadding(new Insets(20));
+        contentArea = new VBox(16);
+        contentArea.setPadding(new Insets(24));
+        contentArea.getStyleClass().add("content-area");
         view.setCenter(contentArea);
     }
 

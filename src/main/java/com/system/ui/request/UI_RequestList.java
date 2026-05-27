@@ -64,8 +64,9 @@ public class UI_RequestList {
         view.setLeft(sidebar);
 
         // Content Area wrapper
-        contentArea = new VBox();
-        contentArea.setPadding(new Insets(20));
+        contentArea = new VBox(16);
+        contentArea.setPadding(new Insets(24));
+        contentArea.getStyleClass().add("content-area");
 
         // Sidebar toggle button
         Button btnToggle = new Button("☰ Ẩn/Hiện Menu");

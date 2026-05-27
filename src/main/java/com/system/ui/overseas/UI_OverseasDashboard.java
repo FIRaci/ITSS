@@ -76,8 +76,9 @@ public class UI_OverseasDashboard {
         sidebar.getChildren().addAll(lblMenu, btnYcnh, btnSite, btnOrders, btnCancel, spacer, btnLogout);
         view.setLeft(sidebar);
 
-        contentArea = new VBox();
-        contentArea.setPadding(new Insets(20));
+        contentArea = new VBox(16);
+        contentArea.setPadding(new Insets(24));
+        contentArea.getStyleClass().add("content-area");
         VBox rightSide = new VBox(contentArea);
         VBox.setVgrow(contentArea, Priority.ALWAYS);
         view.setCenter(rightSide);

@@ -46,9 +46,9 @@ public class UI_AdminDashboard {
         sidebar.getChildren().addAll(lbl, btnUsers, btnLogout);
         view.setLeft(sidebar);
 
-        HBox topBar = new HBox(10);
-        topBar.setPadding(new Insets(20));
-        Label title = new Label("Quản lý tài khoản người dùng");
+        HBox topBar = new HBox();
+        topBar.setPadding(new Insets(20, 24, 16, 24));
+        Label title = new Label("👤 Quản lý tài khoản người dùng");
         title.getStyleClass().add("header-title");
         topBar.getChildren().add(title);
 
@@ -72,14 +72,18 @@ public class UI_AdminDashboard {
         loadData();
 
         HBox bottomBar = new HBox(10);
-        bottomBar.setPadding(new Insets(20));
+        bottomBar.setPadding(new Insets(16, 4, 4, 4));
         TextField txtUser = new TextField();
+        txtUser.getStyleClass().add("text-field");
         txtUser.setPromptText("Tài khoản");
         PasswordField txtPass = new PasswordField();
+        txtPass.getStyleClass().add("password-field");
         txtPass.setPromptText("Mật khẩu (trống=giữ nguyên)");
         ComboBox<String> cbRole = new ComboBox<>();
+        cbRole.getStyleClass().add("combo-box");
         cbRole.getItems().addAll("admin", "sales", "overseas", "warehouse", "site");
-        cbRole.setPromptText("Vai trò");
+        cbRole.setPromptText("Chọn vai trò...");
+        cbRole.setPrefWidth(160);
 
         Button btnAdd = new Button("Thêm / Cập nhật Role");
         btnAdd.getStyleClass().add("btn-primary");

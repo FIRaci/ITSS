@@ -25,17 +25,15 @@ import java.util.List;
 /**
  * Màn hình Tạo Yêu Cầu Nhập Hàng Mới (Bộ phận Bán Hàng).
  *
- * Luồng sự kiện chính:
- *  1. Mã YC tự động sinh, chỉ đọc.
- *  2. Nhân viên nhập mã hàng vào thanh tìm kiếm → hệ thống gợi ý (autocomplete).
+ * Luồng sự kiện:
+ *  1. Mã YC tự động sinh dạng YCNH-YYYYMMDD-001, chỉ đọc.
+ *  2. Nhân viên nhập từ khóa → gợi ý autocomplete (Popup overlay).
  *  3. Chọn mặt hàng → popup nhập SL / Đơn vị / Ngày nhận.
- *  4. Lặp đến khi đủ hàng → Gửi yêu cầu.
+ *  4. Lặp cho đủ → Gửi yêu cầu.
  */
 public class CreateRequestScreen {
     private final CreateImportRequestUseCase useCase;
     private final ManageMerchandiseUseCase merchandiseUseCase;
-
-    // Danh sách mặt hàng đã thêm vào yêu cầu
     private final ObservableList<ImportRequestDetail> detailsList = FXCollections.observableArrayList();
 
     public CreateRequestScreen() {
@@ -48,55 +46,51 @@ public class CreateRequestScreen {
         stage.initModality(Modality.APPLICATION_MODAL);
         stage.setTitle("Tạo Yêu Cầu Nhập Hàng Mới");
 
-        // ─── Mã Yêu Cầu (auto-serial, read-only) ────────────────────────────
+        // ── Mã Yêu Cầu (auto-serial, read-only) ──────────────────────────
         String generatedId = merchandiseUseCase.generateNextRequestId();
         TextField txtId = new TextField(generatedId);
         txtId.setEditable(false);
-        txtId.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #475569; -fx-font-weight: bold; -fx-border-color: #cbd5e1; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 8;");
+        txtId.setDisable(true);
+        txtId.getStyleClass().add("text-field");
+        txtId.setPrefWidth(260);
+
         Label lblId = new Label("Mã Yêu Cầu:");
-        lblId.setStyle("-fx-font-weight: bold;");
+        lblId.getStyleClass().add("label-form");
+
         HBox headerBox = new HBox(12, lblId, txtId);
         headerBox.setAlignment(Pos.CENTER_LEFT);
-        headerBox.setPadding(new Insets(0, 0, 8, 0));
 
-        Separator sep1 = new Separator();
-
-        // ─── Thanh tìm kiếm mặt hàng (autocomplete) ────────────────────────
-        Label lblSearch = new Label("Tìm kiếm & Thêm mặt hàng");
-        lblSearch.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        // ── Tìm kiếm mặt hàng (autocomplete) ─────────────────────────────
+        Label lblSearch = new Label("🔍  Tìm kiếm & Thêm mặt hàng");
+        lblSearch.getStyleClass().add("section-title");
 
         TextField txtSearch = new TextField();
+        txtSearch.getStyleClass().add("text-field");
         txtSearch.setPromptText("Nhập mã hàng hoặc tên hàng để tìm kiếm...");
-        txtSearch.setStyle("-fx-padding: 10; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: #cbd5e1;");
-        txtSearch.setPrefWidth(450);
+        txtSearch.setPrefWidth(460);
 
-        // Label lỗi mã hàng không tìm thấy
         Label lblSearchError = new Label();
-        lblSearchError.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px;");
+        lblSearchError.getStyleClass().add("label-subtle");
+        lblSearchError.setStyle("-fx-text-fill: #ef4444;");
         lblSearchError.setVisible(false);
         lblSearchError.setManaged(false);
 
-        // Dropdown gợi ý dùng Popup để nổi lên trên layout, không đẩy content xuống
+        // Dropdown overlay (Popup, không chiếm layout)
         ListView<Merchandise> suggestionList = new ListView<>();
-        suggestionList.setPrefWidth(450);
-        suggestionList.setPrefHeight(180);
-        suggestionList.setStyle("-fx-border-color: #94a3b8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 4);");
+        suggestionList.setPrefWidth(460);
+        suggestionList.setPrefHeight(200);
 
         Popup suggestionPopup = new Popup();
         suggestionPopup.setAutoHide(true);
         suggestionPopup.getContent().add(suggestionList);
 
-        VBox searchBox = new VBox(4, txtSearch, lblSearchError);
+        VBox searchBox = new VBox(6, txtSearch, lblSearchError);
 
-        // Xử lý nhập từ khóa → gợi ý
         txtSearch.addEventHandler(KeyEvent.KEY_RELEASED, evt -> {
             String kw = txtSearch.getText().trim();
             lblSearchError.setVisible(false);
             lblSearchError.setManaged(false);
-            if (kw.isEmpty()) {
-                suggestionPopup.hide();
-                return;
-            }
+            if (kw.isEmpty()) { suggestionPopup.hide(); return; }
             List<Merchandise> results = merchandiseUseCase.search(kw);
             if (results.isEmpty()) {
                 suggestionPopup.hide();
@@ -105,17 +99,13 @@ public class CreateRequestScreen {
                 lblSearchError.setManaged(true);
             } else {
                 suggestionList.setItems(FXCollections.observableArrayList(results));
-                // Hiện popup ngay bên dưới ô tìm kiếm
                 Bounds bounds = txtSearch.localToScreen(txtSearch.getBoundsInLocal());
-                if (bounds != null) {
-                    suggestionPopup.show(stage, bounds.getMinX(), bounds.getMaxY() + 2);
-                }
+                if (bounds != null) suggestionPopup.show(stage, bounds.getMinX(), bounds.getMaxY() + 2);
                 lblSearchError.setVisible(false);
                 lblSearchError.setManaged(false);
             }
         });
 
-        // Chọn mặt hàng từ gợi ý → mở popup nhập thông tin chi tiết
         suggestionList.setOnMouseClicked(evt -> {
             Merchandise selected = suggestionList.getSelectionModel().getSelectedItem();
             if (selected != null) {
@@ -125,22 +115,18 @@ public class CreateRequestScreen {
             }
         });
 
-        // Ẩn popup khi mất focus
-        txtSearch.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) suggestionPopup.hide();
-        });
+        txtSearch.focusedProperty().addListener((obs, was, now) -> { if (!now) suggestionPopup.hide(); });
 
-        // ─── Bảng danh sách mặt hàng đã thêm ──────────────────────────────
-        Label lblList = new Label("Danh sách mặt hàng trong yêu cầu");
-        lblList.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #1e293b;");
+        // ── Bảng danh sách mặt hàng đã thêm ─────────────────────────────
+        Label lblList = new Label("📋  Danh sách mặt hàng trong yêu cầu");
+        lblList.getStyleClass().add("section-title");
 
         TableView<ImportRequestDetail> table = buildDetailTable();
         table.setItems(detailsList);
-        table.setPrefHeight(220);
+        table.setPrefHeight(210);
 
-        // Nút xóa dòng đã chọn trong bảng
         Button btnRemoveRow = new Button("✕ Xóa dòng đã chọn");
-        btnRemoveRow.setStyle("-fx-background-color: #fee2e2; -fx-text-fill: #dc2626; -fx-font-weight: bold; -fx-border-color: #fca5a5; -fx-border-radius: 6; -fx-background-radius: 6; -fx-padding: 6 12;");
+        btnRemoveRow.getStyleClass().add("btn-danger");
         btnRemoveRow.setDisable(true);
         table.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) ->
                 btnRemoveRow.setDisable(nv == null));
@@ -149,12 +135,15 @@ public class CreateRequestScreen {
             if (sel != null) detailsList.remove(sel);
         });
 
-        Separator sep2 = new Separator();
-
-        // ─── Nút Gửi Yêu Cầu ────────────────────────────────────────────────
-        Button btnSave = new Button("📤 Gửi Yêu Cầu");
-        btnSave.setStyle("-fx-background-color: #2563eb; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 10 24; -fx-border-radius: 8; -fx-background-radius: 8;");
+        // ── Nút Gửi / Hủy ────────────────────────────────────────────────
+        Button btnSave = new Button("📤  Gửi Yêu Cầu");
+        btnSave.getStyleClass().add("btn-primary");
         btnSave.setMaxWidth(Double.MAX_VALUE);
+
+        Button btnCancel = new Button("Hủy bỏ");
+        btnCancel.getStyleClass().add("btn-secondary");
+        btnCancel.setOnAction(e -> stage.close());
+
         btnSave.setOnAction(e -> {
             if (detailsList.isEmpty()) {
                 showAlert("Lỗi", "Phải có ít nhất 1 mặt hàng trong danh sách!");
@@ -172,167 +161,135 @@ public class CreateRequestScreen {
             }
         });
 
-        Button btnCancel = new Button("Hủy bỏ");
-        btnCancel.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #64748b; -fx-font-weight: bold; -fx-padding: 10 24; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: #cbd5e1;");
-        btnCancel.setOnAction(e -> stage.close());
-
         HBox bottomButtons = new HBox(12, btnSave, btnCancel);
         HBox.setHgrow(btnSave, Priority.ALWAYS);
 
-        // ─── Ghép layout ────────────────────────────────────────────────────
-        VBox layout = new VBox(14,
+        // ── Layout tổng ───────────────────────────────────────────────────
+        VBox layout = new VBox(16,
                 headerBox,
-                sep1,
+                new Separator(),
                 lblSearch, searchBox,
-                sep2,
+                new Separator(),
                 lblList, table, btnRemoveRow,
                 new Separator(),
                 bottomButtons
         );
         layout.setPadding(new Insets(24));
-        layout.setStyle("-fx-background-color: white;");
 
-        Scene scene = new Scene(layout, 750, 680);
+        Scene scene = new Scene(layout, 760, 680);
         try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
         stage.setScene(scene);
         stage.show();
 
-        // Focus vào ô tìm kiếm sau khi mở
         Platform.runLater(txtSearch::requestFocus);
     }
 
     /**
-     * Popup nhập thông tin chi tiết (SL, Đơn vị, Ngày nhận) cho mặt hàng được chọn.
+     * Popup nhập SL / Đơn vị / Ngày nhận cho mặt hàng được chọn.
      */
     private void showDetailInputPopup(Stage parentStage, Merchandise merchandise,
                                       ObservableList<ImportRequestDetail> detailsList) {
         Stage popup = new Stage();
         popup.initOwner(parentStage);
         popup.initModality(Modality.WINDOW_MODAL);
-        popup.setTitle("Nhập thông tin mặt hàng");
+        popup.setTitle("Nhập thông tin: " + merchandise.getCode());
 
         VBox layout = new VBox(14);
         layout.setPadding(new Insets(24));
-        layout.setStyle("-fx-background-color: white;");
-        layout.setPrefWidth(420);
+        layout.setPrefWidth(440);
 
-        // Thông tin mặt hàng (read-only)
-        Label lblCode = new Label("Mã hàng: " + merchandise.getCode());
-        lblCode.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #1e293b;");
-        Label lblName = new Label("Tên hàng: " + merchandise.getName());
-        lblName.setStyle("-fx-text-fill: #475569;");
+        // Thông tin mặt hàng (read-only header)
+        Label lblCode = new Label(merchandise.getCode() + "  —  " + merchandise.getName());
+        lblCode.getStyleClass().add("section-title");
+        Label lblHint = new Label("Điền thông tin bên dưới để thêm vào yêu cầu.");
+        lblHint.getStyleClass().add("label-subtle");
 
         Separator sep = new Separator();
 
-        // ─── Form nhập ───────────────────────────────────────────────────────
+        // Form nhập
         GridPane grid = new GridPane();
-        grid.setHgap(12); grid.setVgap(10);
+        grid.setHgap(16); grid.setVgap(10);
 
-        // Số lượng
-        Label lblQty = new Label("Số lượng *");
-        lblQty.setStyle("-fx-font-weight: bold;");
+        Label lblQty = new Label("Số lượng *"); lblQty.getStyleClass().add("label-form");
         TextField txtQty = new TextField();
+        txtQty.getStyleClass().add("text-field");
         txtQty.setPromptText("VD: 100");
-        txtQty.setStyle("-fx-padding: 8; -fx-border-radius: 6; -fx-background-radius: 6; -fx-border-color: #cbd5e1;");
-        Label lblQtyErr = new Label();
-        lblQtyErr.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 11px;");
+        Label lblQtyErr = new Label(); lblQtyErr.getStyleClass().add("label-subtle");
+        lblQtyErr.setStyle("-fx-text-fill: #ef4444;");
 
-        // Đơn vị (điền sẵn từ danh mục nhưng cho sửa)
-        Label lblUnit = new Label("Đơn vị *");
-        lblUnit.setStyle("-fx-font-weight: bold;");
+        Label lblUnit = new Label("Đơn vị *"); lblUnit.getStyleClass().add("label-form");
         TextField txtUnit = new TextField(merchandise.getUnit());
-        txtUnit.setStyle("-fx-padding: 8; -fx-border-radius: 6; -fx-background-radius: 6; -fx-border-color: #cbd5e1;");
-        Label lblUnitErr = new Label();
-        lblUnitErr.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 11px;");
+        txtUnit.getStyleClass().add("text-field");
+        Label lblUnitErr = new Label(); lblUnitErr.getStyleClass().add("label-subtle");
+        lblUnitErr.setStyle("-fx-text-fill: #ef4444;");
 
-        // Ngày nhận mong muốn
-        Label lblDate = new Label("Ngày nhận mong muốn *");
-        lblDate.setStyle("-fx-font-weight: bold;");
+        Label lblDate = new Label("Ngày nhận mong muốn *"); lblDate.getStyleClass().add("label-form");
         DatePicker dpDate = new DatePicker();
+        dpDate.getStyleClass().add("date-picker");
         dpDate.setPromptText("Chọn ngày...");
-        dpDate.setStyle("-fx-pref-width: 200;");
-        // Chặn chọn ngày trong quá khứ
+        dpDate.setMaxWidth(Double.MAX_VALUE);
+        // Disable ngày quá khứ
         dpDate.setDayCellFactory(picker -> new DateCell() {
             @Override
             public void updateItem(LocalDate date, boolean empty) {
                 super.updateItem(date, empty);
-                if (date.isBefore(LocalDate.now().plusDays(1))) {
-                    setDisable(true);
-                    setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #94a3b8;");
-                }
+                if (date.isBefore(LocalDate.now().plusDays(1))) setDisable(true);
             }
         });
-        Label lblDateErr = new Label();
-        lblDateErr.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 11px;");
+        Label lblDateErr = new Label(); lblDateErr.getStyleClass().add("label-subtle");
+        lblDateErr.setStyle("-fx-text-fill: #ef4444;");
 
-        grid.addRow(0, lblQty, txtQty);
-        grid.addRow(1, new Label(), lblQtyErr);
-        grid.addRow(2, lblUnit, txtUnit);
-        grid.addRow(3, new Label(), lblUnitErr);
-        grid.addRow(4, lblDate, dpDate);
-        grid.addRow(5, new Label(), lblDateErr);
+        grid.addRow(0, lblQty, txtQty);   grid.addRow(1, new Label(), lblQtyErr);
+        grid.addRow(2, lblUnit, txtUnit); grid.addRow(3, new Label(), lblUnitErr);
+        grid.addRow(4, lblDate, dpDate); grid.addRow(5, new Label(), lblDateErr);
         GridPane.setHgrow(txtQty, Priority.ALWAYS);
         GridPane.setHgrow(txtUnit, Priority.ALWAYS);
         GridPane.setHgrow(dpDate, Priority.ALWAYS);
 
-        // Nút "Thêm vào danh sách"
-        Button btnAdd = new Button("✓ Thêm vào danh sách");
-        btnAdd.setStyle("-fx-background-color: #16a34a; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20; -fx-border-radius: 8; -fx-background-radius: 8;");
+        Button btnAdd = new Button("✓  Thêm vào danh sách");
+        btnAdd.getStyleClass().add("btn-success");
         btnAdd.setMaxWidth(Double.MAX_VALUE);
         Button btnClose = new Button("Hủy");
-        btnClose.setStyle("-fx-background-color: #f1f5f9; -fx-text-fill: #64748b; -fx-padding: 10 20; -fx-border-radius: 8; -fx-background-radius: 8; -fx-border-color: #cbd5e1;");
+        btnClose.getStyleClass().add("btn-secondary");
         btnClose.setOnAction(e -> popup.close());
 
         btnAdd.setOnAction(e -> {
             boolean valid = true;
 
-            // Validate Số lượng
+            // Validate SL
             int qty = 0;
             try {
                 qty = Integer.parseInt(txtQty.getText().trim());
                 if (qty <= 0) throw new NumberFormatException();
                 lblQtyErr.setText("");
-                txtQty.setStyle(txtQty.getStyle().replace("-fx-border-color: #ef4444;", "-fx-border-color: #cbd5e1;"));
             } catch (NumberFormatException ex) {
                 lblQtyErr.setText("Số lượng phải là số nguyên dương (> 0).");
-                txtQty.setStyle("-fx-border-color: #ef4444; -fx-padding: 8; -fx-border-radius: 6; -fx-background-radius: 6;");
                 valid = false;
             }
 
-            // Validate Đơn vị
+            // Validate ĐV
             if (txtUnit.getText().trim().isEmpty()) {
-                lblUnitErr.setText("Đơn vị không được để trống.");
-                txtUnit.setStyle("-fx-border-color: #ef4444; -fx-padding: 8; -fx-border-radius: 6; -fx-background-radius: 6;");
-                valid = false;
-            } else {
-                lblUnitErr.setText("");
-                txtUnit.setStyle("-fx-padding: 8; -fx-border-radius: 6; -fx-background-radius: 6; -fx-border-color: #cbd5e1;");
-            }
+                lblUnitErr.setText("Đơn vị không được để trống."); valid = false;
+            } else { lblUnitErr.setText(""); }
 
-            // Validate Ngày nhận
+            // Validate Ngày
             if (dpDate.getValue() == null || !dpDate.getValue().isAfter(LocalDate.now())) {
-                lblDateErr.setText("Ngày nhận phải là ngày trong tương lai.");
-                valid = false;
-            } else {
-                lblDateErr.setText("");
-            }
+                lblDateErr.setText("Ngày nhận phải là ngày trong tương lai."); valid = false;
+            } else { lblDateErr.setText(""); }
 
             if (!valid) return;
 
-            // Kiểm tra không thêm trùng mã hàng trong cùng yêu cầu
-            boolean duplicate = detailsList.stream()
-                    .anyMatch(d -> d.getMerchandiseCode().equals(merchandise.getCode()));
-            if (duplicate) {
+            // Kiểm tra trùng mã trong cùng yêu cầu
+            if (detailsList.stream().anyMatch(d -> d.getMerchandiseCode().equals(merchandise.getCode()))) {
                 showAlert("Trùng mặt hàng",
-                        "Mặt hàng '" + merchandise.getCode() + "' đã có trong danh sách.\n" +
-                        "Vui lòng chỉnh sửa dòng hiện tại thay vì thêm mới.");
+                    "Mặt hàng '" + merchandise.getCode() + "' đã có trong danh sách.\n" +
+                    "Chỉnh sửa dòng hiện tại thay vì thêm mới.");
                 return;
             }
 
             ImportRequestDetail detail = new ImportRequestDetail(
                     0, "", merchandise.getCode(), qty,
-                    txtUnit.getText().trim(), dpDate.getValue().toString()
-            );
+                    txtUnit.getText().trim(), dpDate.getValue().toString());
             detail.setUiAction("Add");
             detailsList.add(detail);
             popup.close();
@@ -341,7 +298,7 @@ public class CreateRequestScreen {
         HBox bottomBtns = new HBox(10, btnAdd, btnClose);
         HBox.setHgrow(btnAdd, Priority.ALWAYS);
 
-        layout.getChildren().addAll(lblCode, lblName, sep, grid, bottomBtns);
+        layout.getChildren().addAll(lblCode, lblHint, sep, grid, bottomBtns);
 
         Scene scene = new Scene(layout);
         try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
@@ -350,7 +307,6 @@ public class CreateRequestScreen {
         Platform.runLater(txtQty::requestFocus);
     }
 
-    /** Tạo bảng hiển thị danh sách mặt hàng đã thêm. */
     @SuppressWarnings("unchecked")
     private TableView<ImportRequestDetail> buildDetailTable() {
         TableView<ImportRequestDetail> table = new TableView<>();
@@ -358,20 +314,13 @@ public class CreateRequestScreen {
         table.setPlaceholder(new Label("Chưa có mặt hàng nào. Hãy tìm kiếm và thêm ở trên."));
 
         TableColumn<ImportRequestDetail, String> colCode = new TableColumn<>("Mã hàng");
-        colCode.setCellValueFactory(new PropertyValueFactory<>("merchandiseCode"));
-        colCode.setPrefWidth(130);
-
+        colCode.setCellValueFactory(new PropertyValueFactory<>("merchandiseCode")); colCode.setPrefWidth(130);
         TableColumn<ImportRequestDetail, Integer> colQty = new TableColumn<>("Số lượng");
-        colQty.setCellValueFactory(new PropertyValueFactory<>("quantity"));
-        colQty.setPrefWidth(100);
-
+        colQty.setCellValueFactory(new PropertyValueFactory<>("quantity")); colQty.setPrefWidth(100);
         TableColumn<ImportRequestDetail, String> colUnit = new TableColumn<>("Đơn vị");
-        colUnit.setCellValueFactory(new PropertyValueFactory<>("unit"));
-        colUnit.setPrefWidth(100);
-
+        colUnit.setCellValueFactory(new PropertyValueFactory<>("unit")); colUnit.setPrefWidth(100);
         TableColumn<ImportRequestDetail, String> colDate = new TableColumn<>("Ngày nhận mong muốn");
-        colDate.setCellValueFactory(new PropertyValueFactory<>("desiredDeliveryDate"));
-        colDate.setPrefWidth(180);
+        colDate.setCellValueFactory(new PropertyValueFactory<>("desiredDeliveryDate")); colDate.setPrefWidth(180);
 
         table.getColumns().addAll(colCode, colQty, colUnit, colDate);
         return table;
@@ -381,7 +330,6 @@ public class CreateRequestScreen {
         Alert a = new Alert(Alert.AlertType.WARNING);
         a.setTitle(title); a.setHeaderText(null); a.setContentText(msg); a.showAndWait();
     }
-
     private void showSuccessPopup(String msg) {
         Alert a = new Alert(Alert.AlertType.INFORMATION);
         a.setTitle("Thành công"); a.setHeaderText(null); a.setContentText(msg); a.showAndWait();

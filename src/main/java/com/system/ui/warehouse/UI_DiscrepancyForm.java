@@ -26,8 +26,9 @@ public class UI_DiscrepancyForm {
 
         ComboBox<String> cbReason = new ComboBox<>();
         cbReason.getItems().addAll("Thiếu hàng", "Hàng hỏng/vỡ", "Sai quy cách/màu sắc", "Thừa hàng (Lưu kho tạm 7 ngày)");
-        cbReason.setPromptText("Lý do sai lệch");
-        cbReason.setStyle("-fx-background-color: white; -fx-border-color: #cbd5e1; -fx-border-radius: 6px; -fx-padding: 4px;");
+        cbReason.setPromptText("Chọn lý do sai lệch...");
+        cbReason.getStyleClass().add("combo-box");
+        cbReason.setMaxWidth(Double.MAX_VALUE);
 
         TextField txtQty = new TextField();
         txtQty.setPromptText("Số lượng sai lệch");
@@ -65,10 +66,18 @@ public class UI_DiscrepancyForm {
             }
         });
 
-        layout.getChildren().addAll(new Label("Đơn hàng: " + order.getId()), new Label("Mã hàng: " + order.getMerchandiseCode()),
-                cbReason, txtQty, txtEvidence, txtNote, btnSave);
-        Scene scene = new Scene(layout, 420, 420);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        Label lblHeader = new Label("⚠️ Đạt hàng: #" + order.getId() + "  —  Mã hàng: " + order.getMerchandiseCode());
+        lblHeader.getStyleClass().add("section-title");
+
+        layout.getChildren().addAll(
+            lblHeader, new Separator(),
+            new Label("Lý do sai lệch *:"), cbReason,
+            new Label("Số lượng sai lệch *:"), txtQty,
+            new Label("Ảnh minh chứng (URL):"), txtEvidence,
+            new Label("Giải trình chi tiết:"), txtNote,
+            new Separator(), btnSave);
+        Scene scene = new Scene(layout, 460, 480);
+        try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
         stage.setScene(scene);
         stage.show();
     }

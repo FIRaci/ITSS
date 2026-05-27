@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import com.itss.*;
@@ -40,8 +41,10 @@ public class Main extends Application {
 
     public void showLoginScreen() {
         LoginScreen loginScreen = new LoginScreen(this);
-        primaryStage.setScene(createStyledScene(loginScreen.getView(), 600, 450));
-        primaryStage.setTitle("IMS - Login");
+        primaryStage.setScene(createStyledScene(loginScreen.getView(), 900, 560));
+        primaryStage.setTitle("RetailApp — Đăng nhập");
+        primaryStage.setMinWidth(700);
+        primaryStage.setMinHeight(480);
         primaryStage.show();
     }
 
