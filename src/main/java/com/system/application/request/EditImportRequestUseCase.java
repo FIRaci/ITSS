@@ -50,6 +50,18 @@ public class EditImportRequestUseCase {
         if (reason == null || reason.trim().isEmpty()) {
             throw new Exception("Phải nhập lý do thay đổi!");
         }
+        
+        java.time.LocalDate today = java.time.LocalDate.now();
+        for (ImportRequestDetail detail : newList) {
+            if (!detail.getUiAction().equals("Delete")) {
+                if (detail.getQuantity() <= 0) {
+                    throw new Exception("Lỗi bảo mật/nghiệp vụ: Số lượng của " + detail.getMerchandiseCode() + " phải lớn hơn 0.");
+                }
+                if (!java.time.LocalDate.parse(detail.getDesiredDeliveryDate()).isAfter(today)) {
+                    throw new Exception("Lỗi bảo mật/nghiệp vụ: Ngày nhận của " + detail.getMerchandiseCode() + " phải nằm ở tương lai.");
+                }
+            }
+        }
 
         repository.updateRequest(reqId, toInsert, toUpdate, toDelete, diff.toString(), reason, user);
     }

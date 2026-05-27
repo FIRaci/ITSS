@@ -64,10 +64,28 @@ public class RequestRepositoryImpl {
     }
 
     public void deleteImportRequest(String id) throws Exception {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement("DELETE FROM ImportRequest WHERE id = ?")) {
-            pstmt.setString(1, id);
-            pstmt.executeUpdate();
+        try (Connection conn = Database.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // Delete children first to prevent Foreign Key constraints and orphans
+                try(PreparedStatement ps1 = conn.prepareStatement("DELETE FROM ycnh_chitiet WHERE ycnh_id = ?")) {
+                    ps1.setString(1, id);
+                    ps1.executeUpdate();
+                }
+                try(PreparedStatement ps2 = conn.prepareStatement("DELETE FROM ycnh_history WHERE ycnh_id = ?")) {
+                    ps2.setString(1, id);
+                    ps2.executeUpdate();
+                }
+                // Delete master record
+                try(PreparedStatement ps3 = conn.prepareStatement("DELETE FROM ImportRequest WHERE id = ?")) {
+                    ps3.setString(1, id);
+                    ps3.executeUpdate();
+                }
+                conn.commit();
+            } catch (Exception ex) {
+                conn.rollback();
+                throw ex;
+            }
         }
     }
 

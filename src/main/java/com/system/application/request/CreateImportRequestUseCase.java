@@ -19,6 +19,16 @@ public class CreateImportRequestUseCase {
             throw new Exception("Danh sách mặt hàng trống!");
         }
         
+        java.time.LocalDate today = java.time.LocalDate.now();
+        for (ImportRequestDetail detail : detailsList) {
+            if (detail.getQuantity() <= 0) {
+                throw new Exception("Lỗi bảo mật/nghiệp vụ: Số lượng của " + detail.getMerchandiseCode() + " phải lớn hơn 0.");
+            }
+            if (!java.time.LocalDate.parse(detail.getDesiredDeliveryDate()).isAfter(today)) {
+                throw new Exception("Lỗi bảo mật/nghiệp vụ: Ngày nhận của " + detail.getMerchandiseCode() + " phải nằm ở tương lai.");
+            }
+        }
+        
         repository.insertNewRequest(reqId, user, detailsList);
     }
 }
