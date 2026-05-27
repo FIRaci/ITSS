@@ -20,6 +20,14 @@ public class Main extends Application {
         showLoginScreen();
     }
 
+    public void showSalesScreen() {
+        com.system.ui.request.UI_RequestList ui = new com.system.ui.request.UI_RequestList(this);
+        Scene scene = new Scene(ui.getView(), 1280, 800);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Bộ phận Bán hàng - Retail App");
+    }
+
     private Scene createStyledScene(javafx.scene.Parent root, double width, double height) {
         Scene scene = new Scene(root, width, height);
         try {
@@ -46,7 +54,7 @@ public class Main extends Application {
             nextScene = createStyledScene(new AdminScreen(this).getView(), 1000, 700);
             primaryStage.setTitle("Admin Dashboard");
         } else if (user.getRole().equalsIgnoreCase("sales") || user.getRole().equalsIgnoreCase("banhang")) {
-            nextScene = createStyledScene(new SalesScreen(this).getView(), 1100, 750);
+            nextScene = createStyledScene(new com.system.ui.request.UI_RequestList(this).getView(), 1100, 750);
             primaryStage.setTitle("Sales Dashboard - Quản lý Yêu cầu Nhập hàng");
         } else if (user.getRole().equalsIgnoreCase("overseas")) {
             nextScene = createStyledScene(new OverseasScreen(this).getView(), 1100, 750);

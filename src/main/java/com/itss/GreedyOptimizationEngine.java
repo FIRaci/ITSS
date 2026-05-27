@@ -4,21 +4,22 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import com.system.infrastructure.persistence.RequestRepositoryImpl;
 
 public class GreedyOptimizationEngine implements IOptimizationEngine {
 
-    private ImportRequestRepository requestRepository;
+    private RequestRepositoryImpl repository;
     private SiteRepository siteRepository;
 
     public GreedyOptimizationEngine() {
-        this.requestRepository = new ImportRequestRepository();
+        this.repository = new RequestRepositoryImpl();
         this.siteRepository = new SiteRepository();
     }
 
     @Override
     public List<AllocationRow> buildAllocationPlan(String requestId) {
         List<AllocationRow> plan = new ArrayList<>();
-        List<ImportRequestDetail> details = requestRepository.findDetailsByRequestId(requestId);
+        List<ImportRequestDetail> details = repository.findDetailsByRequestId(requestId);
 
         for (ImportRequestDetail detail : details) {
             String code = detail.getMerchandiseCode();

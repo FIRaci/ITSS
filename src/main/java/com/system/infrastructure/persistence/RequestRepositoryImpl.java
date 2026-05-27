@@ -1,40 +1,47 @@
-package com.itss;
+package com.system.infrastructure.persistence;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
+import com.system.domain.request.ImportRequest;
+import com.system.domain.request.RequestDetail;
+import com.itss.ImportRequestHistory; // Keep using this or define new Domain entity? Wait, the domain has ImportRequest, RequestDetail, ChangeLog.
+// Let's create ChangeLog domain class or reuse old ones.
+// I will just use the legacy DTOs for now in com.itss since this is an iterative refactoring, or I should map them.
+import com.itss.ImportRequestDetail;
+import com.itss.ImportRequestHistory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.LocalDate;
 import java.util.List;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
-public class ImportRequestRepository {
+public class RequestRepositoryImpl {
 
-    public ObservableList<ImportRequest> findAllMaster(String keyword) {
-        ObservableList<ImportRequest> list = FXCollections.observableArrayList();
+    public ObservableList<com.itss.ImportRequest> findAllMaster(String keyword) {
+        ObservableList<com.itss.ImportRequest> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM ImportRequest WHERE LOWER(id) LIKE ? ORDER BY created_at DESC";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, "%" + keyword + "%");
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                list.add(new ImportRequest(rs.getString("id"), rs.getString("status"), 
+                list.add(new com.itss.ImportRequest(rs.getString("id"), rs.getString("status"), 
                         rs.getBoolean("is_accepted"), rs.getString("created_by"), rs.getString("created_at")));
             }
         } catch (Exception e) { e.printStackTrace(); }
         return list;
     }
 
-    public ObservableList<ImportRequestDetail> findDetailsByRequestId(String requestId) {
-        ObservableList<ImportRequestDetail> list = FXCollections.observableArrayList();
+    public ObservableList<com.itss.ImportRequestDetail> findDetailsByRequestId(String requestId) {
+        ObservableList<com.itss.ImportRequestDetail> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM ycnh_chitiet WHERE ycnh_id = ? ORDER BY id ASC";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, requestId);
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
-                list.add(new ImportRequestDetail(rs.getInt("id"), rs.getString("ycnh_id"), 
+                list.add(new com.itss.ImportRequestDetail(rs.getInt("id"), rs.getString("ycnh_id"), 
                         rs.getString("merchandise_code"), rs.getInt("quantity"), 
                         rs.getString("unit"), String.valueOf(rs.getDate("desired_delivery_date"))));
             }
@@ -42,14 +49,14 @@ public class ImportRequestRepository {
         return list;
     }
 
-    public ObservableList<ImportRequestHistory> findAllHistory() {
-        ObservableList<ImportRequestHistory> list = FXCollections.observableArrayList();
+    public ObservableList<com.itss.ImportRequestHistory> findAllHistory() {
+        ObservableList<com.itss.ImportRequestHistory> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM ycnh_history ORDER BY id DESC";
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                list.add(new ImportRequestHistory(rs.getInt("id"), rs.getString("ycnh_id"), rs.getString("action_type"),
+                list.add(new com.itss.ImportRequestHistory(rs.getInt("id"), rs.getString("ycnh_id"), rs.getString("action_type"),
                         rs.getString("changed_by"), rs.getString("diff_text"), rs.getString("reason"), rs.getString("changed_at")));
             }
         } catch (Exception e) { e.printStackTrace(); }
@@ -57,15 +64,15 @@ public class ImportRequestRepository {
     }
 
     public void deleteImportRequest(String id) throws Exception {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
+        try (Connection conn = Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement("DELETE FROM ImportRequest WHERE id = ?")) {
             pstmt.setString(1, id);
             pstmt.executeUpdate();
         }
     }
 
-    public void insertNewRequest(String reqId, String user, List<ImportRequestDetail> detailsList) throws Exception {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
+    public void insertNewRequest(String reqId, String user, List<com.itss.ImportRequestDetail> detailsList) throws Exception {
+        try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // 1. Insert Master
@@ -77,7 +84,7 @@ public class ImportRequestRepository {
                 // 2. Insert Details
                 String sqlDetail = "INSERT INTO ycnh_chitiet (ycnh_id, merchandise_code, quantity, unit, desired_delivery_date) VALUES (?, ?, ?, ?, ?)";
                 try(PreparedStatement psD = conn.prepareStatement(sqlDetail)) {
-                    for(ImportRequestDetail ct : detailsList) {
+                    for(com.itss.ImportRequestDetail ct : detailsList) {
                         psD.setString(1, reqId);
                         psD.setString(2, ct.getMerchandiseCode());
                         psD.setInt(3, ct.getQuantity());
@@ -104,18 +111,18 @@ public class ImportRequestRepository {
         }
     }
 
-    public void updateRequest(String reqId, List<ImportRequestDetail> inserts, List<ImportRequestDetail> updates, List<ImportRequestDetail> deletes, String diffText, String reason, String user) throws Exception {
-        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
+    public void updateRequest(String reqId, List<com.itss.ImportRequestDetail> inserts, List<com.itss.ImportRequestDetail> updates, List<com.itss.ImportRequestDetail> deletes, String diffText, String reason, String user) throws Exception {
+        try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // Delete
                 try(PreparedStatement psD = conn.prepareStatement("DELETE FROM ycnh_chitiet WHERE id = ?")) {
-                    for(ImportRequestDetail c : deletes) { psD.setInt(1, c.getId()); psD.addBatch(); }
+                    for(com.itss.ImportRequestDetail c : deletes) { psD.setInt(1, c.getId()); psD.addBatch(); }
                     psD.executeBatch();
                 }
                 // Update
                 try(PreparedStatement psU = conn.prepareStatement("UPDATE ycnh_chitiet SET quantity=?, desired_delivery_date=? WHERE id=?")) {
-                    for(ImportRequestDetail c : updates) { 
+                    for(com.itss.ImportRequestDetail c : updates) { 
                         psU.setInt(1, c.getQuantity()); psU.setDate(2, java.sql.Date.valueOf(c.getDesiredDeliveryDate()));
                         psU.setInt(3, c.getId()); psU.addBatch(); 
                     }
@@ -123,7 +130,7 @@ public class ImportRequestRepository {
                 }
                 // Add
                 try(PreparedStatement psA = conn.prepareStatement("INSERT INTO ycnh_chitiet (ycnh_id, merchandise_code, quantity, unit, desired_delivery_date) VALUES (?, ?, ?, ?, ?)")) {
-                    for(ImportRequestDetail c : inserts) {
+                    for(com.itss.ImportRequestDetail c : inserts) {
                         psA.setString(1, reqId); psA.setString(2, c.getMerchandiseCode()); psA.setInt(3, c.getQuantity());
                         psA.setString(4, c.getUnit()); psA.setDate(5, java.sql.Date.valueOf(c.getDesiredDeliveryDate()));
                         psA.addBatch();
