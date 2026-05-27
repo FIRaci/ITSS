@@ -1,29 +1,36 @@
 package com.system.ui.request;
 
+import com.system.application.masterdata.ManageMerchandiseUseCase;
 import com.system.application.request.EditImportRequestUseCase;
 import com.system.application.request.ViewRequestDetailUseCase;
 import com.itss.ImportRequest;
 import com.itss.ImportRequestDetail;
+import com.itss.Merchandise;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class EditRequestForm_GUI {
-    private EditImportRequestUseCase editUseCase;
-    private ViewRequestDetailUseCase viewUseCase;
+    private final EditImportRequestUseCase editUseCase;
+    private final ViewRequestDetailUseCase viewUseCase;
+    private final ManageMerchandiseUseCase merchandiseUseCase;
 
     public EditRequestForm_GUI() {
         this.editUseCase = new EditImportRequestUseCase();
         this.viewUseCase = new ViewRequestDetailUseCase();
+        this.merchandiseUseCase = new ManageMerchandiseUseCase();
     }
 
     public void show(ImportRequest importRequest, Runnable onComplete) {
@@ -83,44 +90,63 @@ public class EditRequestForm_GUI {
             }
         });
 
-        // Add new item entirely
-        GridPane addGrid = new GridPane();
-        addGrid.setHgap(10); addGrid.setVgap(10);
-        TextField aCode = new TextField(); aCode.setPromptText("Mã hàng"); aCode.getStyleClass().add("text-field");
-        TextField aQty = new TextField(); aQty.setPromptText("SL"); aQty.getStyleClass().add("text-field");
-        TextField aUnit = new TextField(); aUnit.setPromptText("Đơn vị"); aUnit.getStyleClass().add("text-field");
-        DatePicker aDate = new DatePicker(); aDate.getStyleClass().add("text-field");
-        Button btnAddRow = new Button("Thêm hàng mới"); btnAddRow.getStyleClass().add("btn-secondary");
+        // ─── Thêm mặt hàng mới bằng autocomplete ────────────────────────
+        Label lblAddNew = new Label("Thêm mặt hàng mới vào yêu cầu");
+        lblAddNew.setStyle("-fx-font-weight: bold; -fx-text-fill: #1e293b;");
 
-        btnAddRow.setOnAction(e -> {
-            try {
-                if (aCode.getText().isEmpty() || aUnit.getText().isEmpty() || aDate.getValue() == null) {
-                    showAlert("Lỗi", "Vui lòng nhập Mã hàng, Đơn vị và Ngày nhận."); return;
-                }
-                if (!aDate.getValue().isAfter(LocalDate.now())) {
-                    showAlert("Lỗi", "Ngày nhận phải lớn hơn ngày hiện tại."); return;
-                }
-                int qty = Integer.parseInt(aQty.getText());
-                if (qty <= 0) throw new Exception();
-                ImportRequestDetail ct = new ImportRequestDetail(0, importRequest.getId(), aCode.getText(), qty, aUnit.getText(), aDate.getValue().toString());
-                ct.setUiAction("Add");
-                editingList.add(ct);
-                table.refresh();
-                aCode.clear(); aQty.clear(); aUnit.clear(); aDate.setValue(null);
-            } catch (Exception ex) {
-                showAlert("Lỗi", "Số lượng phải là số nguyên dương.");
+        TextField aSearch = new TextField();
+        aSearch.setPromptText("Tìm mã hàng hoặc tên hàng để thêm...");
+        aSearch.getStyleClass().add("text-field");
+        aSearch.setPrefWidth(380);
+
+        Label aSearchErr = new Label();
+        aSearchErr.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 11px;");
+        aSearchErr.setVisible(false);
+
+        ListView<Merchandise> aSuggest = new ListView<>();
+        aSuggest.setPrefHeight(130);
+        aSuggest.setStyle("-fx-border-color: #94a3b8;");
+        aSuggest.setVisible(false);
+        aSuggest.setManaged(false);
+
+        aSearch.addEventHandler(KeyEvent.KEY_RELEASED, ev -> {
+            String kw = aSearch.getText().trim();
+            aSearchErr.setVisible(false);
+            if (kw.isEmpty()) { aSuggest.setVisible(false); aSuggest.setManaged(false); return; }
+            List<Merchandise> results = merchandiseUseCase.search(kw);
+            if (results.isEmpty()) {
+                aSuggest.setVisible(false); aSuggest.setManaged(false);
+                aSearchErr.setText("Không tìm thấy mặt hàng."); aSearchErr.setVisible(true);
+            } else {
+                aSuggest.setItems(FXCollections.observableArrayList(results));
+                aSuggest.setVisible(true); aSuggest.setManaged(true);
+                aSearchErr.setVisible(false);
             }
         });
-        addGrid.addRow(0, new Label("Thêm mặt hàng mới -> Mã:"), aCode, new Label("SL:"), aQty, new Label("ĐV:"), aUnit, new Label("Ngày:"), aDate, btnAddRow);
+
+        // Chọn mặt hàng từ gợi ý → popup nhập SL/ĐV/Ngày (tái sử dụng logic)
+        aSuggest.setOnMouseClicked(ev -> {
+            Merchandise sel = aSuggest.getSelectionModel().getSelectedItem();
+            if (sel == null) return;
+            aSuggest.setVisible(false); aSuggest.setManaged(false);
+            aSearch.clear();
+            // Kiểm tra trùng
+            boolean dup = editingList.stream()
+                    .anyMatch(d -> d.getMerchandiseCode().equals(sel.getCode()) && !d.getUiAction().equals("Delete"));
+            if (dup) { showAlert("Trùng mặt hàng", "Mặt hàng '" + sel.getCode() + "' đã có trong danh sách."); return; }
+            showAddItemPopup(stage, sel, editingList, importRequest, table);
+        });
+
+        VBox addNewSection = new VBox(6, lblAddNew, aSearch, aSearchErr, aSuggest);
+        addNewSection.setStyle("-fx-border-color: #e2e8f0; -fx-border-radius: 8; -fx-background-color: #f8fafc; -fx-padding: 10;");
 
 
         Button btnReview = new Button("Lưu & So Sánh (Diff)");
         btnReview.getStyleClass().add("btn-primary");
-        btnReview.setOnAction(e -> {
-            showDiffReviewPopup(importRequest.getId(), oldList, editingList, stage, onComplete);
-        });
+        btnReview.setOnAction(e -> showDiffReviewPopup(importRequest.getId(), oldList, editingList, stage, onComplete));
 
-        layout.getChildren().addAll(new Label("Tính năng thay đổi:"), table, editGrid, addGrid, btnReview);
+        layout.getChildren().addAll(new Label("Chỉnh sửa dòng hiện có:"), table, editGrid,
+                new Separator(), addNewSection, new Separator(), btnReview);
         Scene scene = new Scene(layout, 1200, 650);
         scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         stage.setScene(scene);
@@ -184,6 +210,66 @@ public class EditRequestForm_GUI {
         table.getColumns().addAll(colCode, colQty, colUnit, colDate, colAction);
     }
 
-    private void showAlert(String title, String msg) { Alert a = new Alert(Alert.AlertType.WARNING); a.setTitle(title); a.setContentText(msg); a.showAndWait(); }
+    /** Popup nhập SL/ĐV/Ngày khi thêm mặt hàng mới từ edit form. */
+    private void showAddItemPopup(Stage owner, Merchandise merch, ObservableList<ImportRequestDetail> list,
+                                   ImportRequest importRequest, TableView<ImportRequestDetail> table) {
+        Stage popup = new Stage();
+        popup.initOwner(owner);
+        popup.initModality(Modality.WINDOW_MODAL);
+        popup.setTitle("Thêm mặt hàng: " + merch.getCode());
+
+        VBox layout = new VBox(12);
+        layout.setPadding(new Insets(20));
+        layout.setStyle("-fx-background-color: white;");
+        layout.setPrefWidth(400);
+
+        Label lblInfo = new Label(merch.getCode() + " - " + merch.getName());
+        lblInfo.setStyle("-fx-font-weight: bold; -fx-font-size: 13px;");
+
+        TextField txtQty = new TextField(); txtQty.setPromptText("Số lượng"); txtQty.getStyleClass().add("text-field");
+        TextField txtUnit = new TextField(merch.getUnit()); txtUnit.setPromptText("Đơn vị"); txtUnit.getStyleClass().add("text-field");
+        DatePicker dpDate = new DatePicker();
+        dpDate.setDayCellFactory(pk -> new DateCell() {
+            @Override public void updateItem(LocalDate d, boolean empty) {
+                super.updateItem(d, empty);
+                if (d.isBefore(LocalDate.now().plusDays(1))) { setDisable(true); }
+            }
+        });
+
+        Label errLabel = new Label(); errLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 11px;");
+
+        Button btnOk = new Button("✓ Thêm vào danh sách"); btnOk.getStyleClass().add("btn-primary");
+        btnOk.setMaxWidth(Double.MAX_VALUE);
+        btnOk.setOnAction(ev -> {
+            try {
+                if (txtUnit.getText().trim().isEmpty() || dpDate.getValue() == null) {
+                    errLabel.setText("Vui lòng nhập đầy đủ thông tin bắt buộc."); return;
+                }
+                int qty = Integer.parseInt(txtQty.getText().trim());
+                if (qty <= 0) throw new NumberFormatException();
+                if (!dpDate.getValue().isAfter(LocalDate.now())) {
+                    errLabel.setText("Ngày nhận phải là ngày trong tương lai."); return;
+                }
+                ImportRequestDetail ct = new ImportRequestDetail(
+                        0, importRequest.getId(), merch.getCode(), qty,
+                        txtUnit.getText().trim(), dpDate.getValue().toString());
+                ct.setUiAction("Add");
+                list.add(ct); table.refresh(); popup.close();
+            } catch (NumberFormatException ex) {
+                errLabel.setText("Số lượng phải là số nguyên dương.");
+            }
+        });
+
+        layout.getChildren().addAll(lblInfo, new Separator(),
+                new Label("Số lượng *:"), txtQty,
+                new Label("Đơn vị *:"), txtUnit,
+                new Label("Ngày nhận *:"), dpDate,
+                errLabel, btnOk);
+        popup.setScene(new Scene(layout));
+        popup.show();
+        Platform.runLater(txtQty::requestFocus);
+    }
+
+    private void showAlert(String title, String msg) { Alert a = new Alert(Alert.AlertType.WARNING); a.setTitle(title); a.setHeaderText(null); a.setContentText(msg); a.showAndWait(); }
     private void showSuccessPopup(String msg) { Alert a = new Alert(Alert.AlertType.INFORMATION); a.setTitle("Thành công"); a.setHeaderText(null); a.setContentText(msg); a.showAndWait(); }
 }

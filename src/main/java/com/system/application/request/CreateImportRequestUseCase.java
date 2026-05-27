@@ -16,19 +16,20 @@ public class CreateImportRequestUseCase {
             throw new Exception("Mã ImportRequest không được để trống!");
         }
         if (detailsList == null || detailsList.isEmpty()) {
-            throw new Exception("Danh sách mặt hàng trống!");
+            throw new Exception("Phải có ít nhất 1 mặt hàng trong yêu cầu!");
         }
-        
+
+        // Server-side validation (defense-in-depth): kiểm tra lại toàn bộ trước khi lưu
         java.time.LocalDate today = java.time.LocalDate.now();
         for (ImportRequestDetail detail : detailsList) {
             if (detail.getQuantity() <= 0) {
-                throw new Exception("Lỗi bảo mật/nghiệp vụ: Số lượng của " + detail.getMerchandiseCode() + " phải lớn hơn 0.");
+                throw new Exception("Số lượng của '" + detail.getMerchandiseCode() + "' phải lớn hơn 0.");
             }
             if (!java.time.LocalDate.parse(detail.getDesiredDeliveryDate()).isAfter(today)) {
-                throw new Exception("Lỗi bảo mật/nghiệp vụ: Ngày nhận của " + detail.getMerchandiseCode() + " phải nằm ở tương lai.");
+                throw new Exception("Ngày nhận của '" + detail.getMerchandiseCode() + "' phải là ngày trong tương lai.");
             }
         }
-        
+
         repository.insertNewRequest(reqId, user, detailsList);
     }
 }

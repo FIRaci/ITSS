@@ -2,6 +2,7 @@ package com.system.ui.request;
 
 import com.system.Main;
 import com.system.application.request.ViewRequestDetailUseCase;
+import com.system.ui.masterdata.MerchandiseCatalogScreen;
 import com.itss.ImportRequest;
 import com.itss.ImportRequestHistory;
 import javafx.geometry.Insets;
@@ -51,10 +52,15 @@ public class UI_RequestList {
             mainApp.showLoginScreen();
         });
 
+        Button btnCatalog = new Button("📦 Quản lý Mặt hàng");
+        btnCatalog.setMaxWidth(Double.MAX_VALUE);
+        btnCatalog.getStyleClass().add("sidebar-btn");
+        btnCatalog.setOnAction(e -> new MerchandiseCatalogScreen().show());
+
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
-        sidebar.getChildren().addAll(lblMenu, btnList, btnHistory, spacer, btnLogout);
+        sidebar.getChildren().addAll(lblMenu, btnList, btnHistory, btnCatalog, spacer, btnLogout);
         view.setLeft(sidebar);
 
         // Content Area wrapper
