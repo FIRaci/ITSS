@@ -1,4 +1,5 @@
-package com.itss;
+package com.system.application.auth;
+import com.itss.User;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,7 +14,7 @@ public class SessionManager {
 
     public static boolean login(String username, String password) {
         String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.setString(2, password);

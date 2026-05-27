@@ -1,4 +1,5 @@
 package com.itss;
+import com.system.Main;
 
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -7,13 +8,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 
 public class AdminScreen {
-    private Main mainApp;
+    private com.system.Main mainApp;
     private BorderPane view;
     private TableView<User> table;
     private ObservableList<User> userList;
     private UserController userController;
 
-    public AdminScreen(Main mainApp) {
+    public AdminScreen(com.system.Main mainApp) {
         this.mainApp = mainApp;
         this.userController = new UserController();
         view = new BorderPane();
@@ -32,7 +33,7 @@ public class AdminScreen {
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
-        btnLogout.setOnAction(e -> { SessionManager.logout(); mainApp.showLoginScreen(); });
+        btnLogout.setOnAction(e -> { com.system.application.auth.SessionManager.logout(); mainApp.showLoginScreen(); });
 
         sidebar.getChildren().addAll(lbl, btnUsers, btnLogout);
         view.setLeft(sidebar);

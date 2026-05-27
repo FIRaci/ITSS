@@ -11,7 +11,7 @@ import javafx.collections.FXCollections;
 public class OrderRepository {
 
     public boolean insertOrders(String requestId, List<AllocationRow> plan) {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 PreparedStatement psOrder = conn.prepareStatement("INSERT INTO international_orders (ycnh_id, site_code, merchandise_code, qty, shipping_method, status) VALUES (?, ?, ?, ?, ?, ?)");
@@ -45,7 +45,7 @@ public class OrderRepository {
     public ObservableList<InternationalOrder> findAllOrders() {
         ObservableList<InternationalOrder> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM international_orders ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -63,7 +63,7 @@ public class OrderRepository {
     public ObservableList<InternationalOrder> findOrdersBySite(String siteCode) {
         ObservableList<InternationalOrder> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM international_orders WHERE site_code = ? ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, siteCode);
             ResultSet rs = ps.executeQuery();
@@ -80,7 +80,7 @@ public class OrderRepository {
     }
 
     public boolean updateOrderStatus(int orderId, String status) {
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement("UPDATE international_orders SET status = ? WHERE id = ?")) {
             ps.setString(1, status);
             ps.setInt(2, orderId);
@@ -94,7 +94,7 @@ public class OrderRepository {
     public ObservableList<CancellationRequest> getPendingCancellations() {
         ObservableList<CancellationRequest> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM order_cancellation_requests WHERE status = 'CHỜ DUYỆT' ORDER BY requested_at DESC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -108,7 +108,7 @@ public class OrderRepository {
     }
 
     public boolean approveCancellation(int cancelId, int orderId) {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 PreparedStatement p1 = conn.prepareStatement("UPDATE order_cancellation_requests SET status = 'ĐÃ DUYỆT' WHERE id = ?");
@@ -130,7 +130,7 @@ public class OrderRepository {
     }
 
     public boolean rejectCancellation(int cancelId, int orderId) {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 PreparedStatement p1 = conn.prepareStatement("UPDATE order_cancellation_requests SET status = 'TỪ CHỐI' WHERE id = ?");

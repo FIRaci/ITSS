@@ -1,4 +1,4 @@
-package com.itss;
+package com.system.ui.auth;
 import com.system.Main;
 
 import javafx.geometry.Insets;
@@ -8,10 +8,10 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 
 public class LoginScreen {
-    private com.system.Main mainApp;
+    private Main mainApp;
     private VBox view;
 
-    public LoginScreen(com.system.Main mainApp) {
+    public LoginScreen(Main mainApp) {
         this.mainApp = mainApp;
         buildView();
     }

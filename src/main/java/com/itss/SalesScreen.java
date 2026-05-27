@@ -1,4 +1,5 @@
 package com.itss;
+import com.system.Main;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,12 +14,12 @@ import javafx.stage.Stage;
 import java.time.LocalDate;
 
 public class SalesScreen {
-    private Main mainApp;
+    private com.system.Main mainApp;
     private BorderPane view;
     private VBox contentArea;
     private ImportRequestController controller;
 
-    public SalesScreen(Main mainApp) {
+    public SalesScreen(com.system.Main mainApp) {
         this.mainApp = mainApp;
         this.controller = new ImportRequestController();
         buildView();
@@ -50,7 +51,7 @@ public class SalesScreen {
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
         btnLogout.setOnAction(e -> {
-            SessionManager.logout();
+            com.system.application.auth.SessionManager.logout();
             mainApp.showLoginScreen();
         });
 
@@ -288,7 +289,7 @@ public class SalesScreen {
         btnSave.getStyleClass().add("btn-primary");
         btnSave.setOnAction(e -> {
             String reqId = txtId.getText();
-            String user = SessionManager.getCurrentUser().getUsername();
+            String user = com.system.application.auth.SessionManager.getCurrentUser().getUsername();
 
             try {
                 controller.createNewRequest(reqId, user, detailsList);
@@ -433,7 +434,7 @@ public class SalesScreen {
         btnConfirm.getStyleClass().add("btn-primary");
 
         btnConfirm.setOnAction(e -> {
-            String user = SessionManager.getCurrentUser().getUsername();
+            String user = com.system.application.auth.SessionManager.getCurrentUser().getUsername();
             try {
                 controller.updateRequest(requestId, oldList, newList, txtReason.getText(), user);
                 diffStage.close(); parentStage.close();

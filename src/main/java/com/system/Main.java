@@ -1,4 +1,4 @@
-package com.itss;
+package com.system;
 
 import javafx.application.Application;
 import javafx.geometry.Pos;
@@ -6,6 +6,10 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import com.itss.*;
+import com.system.ui.auth.LoginScreen;
+import com.system.application.auth.SessionManager;
+import com.itss.User;
 
 public class Main extends Application {
     private Stage primaryStage;
@@ -54,7 +58,6 @@ public class Main extends Application {
             nextScene = createStyledScene(new SiteScreen(this).getView(), 1100, 750);
             primaryStage.setTitle("Site Dashboard");
         } else {
-            // Placeholder for unknown roles
             VBox placeholder = new VBox(20);
             placeholder.setAlignment(Pos.CENTER);
             placeholder.getChildren().add(new Label("Welcome " + user.getRole()));

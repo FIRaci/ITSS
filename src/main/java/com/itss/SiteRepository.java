@@ -13,7 +13,7 @@ public class SiteRepository {
         List<SiteStock> list = new ArrayList<>();
         String sql = "SELECT s.site_code, s.days_ship, s.days_air, inv.stock_qty FROM sites s " +
                 "JOIN site_inventory inv ON s.site_code = inv.site_code WHERE inv.merchandise_code = ?";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, merchandiseCode);
             ResultSet rs = ps.executeQuery();
@@ -44,7 +44,7 @@ public class SiteRepository {
     public List<Site> findAllSites() {
         List<Site> list = new ArrayList<>();
         String sql = "SELECT * FROM sites ORDER BY id ASC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -65,7 +65,7 @@ public class SiteRepository {
 
     public boolean insertSite(Site site) {
         String sql = "INSERT INTO sites (site_code, name, days_ship, days_air, other_info) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, site.getSiteCode());
             ps.setString(2, site.getName());
@@ -81,7 +81,7 @@ public class SiteRepository {
 
     public boolean updateSite(Site site) {
         String sql = "UPDATE sites SET name = ?, days_ship = ?, days_air = ?, other_info = ? WHERE site_code = ?";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, site.getName());
             ps.setInt(2, site.getDaysShip());
@@ -97,7 +97,7 @@ public class SiteRepository {
 
     public boolean deleteSite(String siteCode) {
         String sql = "DELETE FROM sites WHERE site_code = ?";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, siteCode);
             return ps.executeUpdate() > 0;

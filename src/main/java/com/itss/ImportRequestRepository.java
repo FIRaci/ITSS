@@ -14,7 +14,7 @@ public class ImportRequestRepository {
     public ObservableList<ImportRequest> findAllMaster(String keyword) {
         ObservableList<ImportRequest> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM ImportRequest WHERE LOWER(id) LIKE ? ORDER BY created_at DESC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, "%" + keyword + "%");
             ResultSet rs = pstmt.executeQuery();
@@ -29,7 +29,7 @@ public class ImportRequestRepository {
     public ObservableList<ImportRequestDetail> findDetailsByRequestId(String requestId) {
         ObservableList<ImportRequestDetail> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM ycnh_chitiet WHERE ycnh_id = ? ORDER BY id ASC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, requestId);
             ResultSet rs = pstmt.executeQuery();
@@ -45,7 +45,7 @@ public class ImportRequestRepository {
     public ObservableList<ImportRequestHistory> findAllHistory() {
         ObservableList<ImportRequestHistory> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM ycnh_history ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -57,7 +57,7 @@ public class ImportRequestRepository {
     }
 
     public void deleteImportRequest(String id) throws Exception {
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement("DELETE FROM ImportRequest WHERE id = ?")) {
             pstmt.setString(1, id);
             pstmt.executeUpdate();
@@ -65,7 +65,7 @@ public class ImportRequestRepository {
     }
 
     public void insertNewRequest(String reqId, String user, List<ImportRequestDetail> detailsList) throws Exception {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // 1. Insert Master
@@ -105,7 +105,7 @@ public class ImportRequestRepository {
     }
 
     public void updateRequest(String reqId, List<ImportRequestDetail> inserts, List<ImportRequestDetail> updates, List<ImportRequestDetail> deletes, String diffText, String reason, String user) throws Exception {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 // Delete

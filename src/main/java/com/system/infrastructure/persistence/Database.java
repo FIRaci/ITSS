@@ -1,4 +1,4 @@
-package com.itss;
+package com.system.infrastructure.persistence;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

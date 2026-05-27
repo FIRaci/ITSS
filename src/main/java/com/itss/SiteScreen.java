@@ -1,4 +1,5 @@
 package com.itss;
+import com.system.Main;
 
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -7,13 +8,13 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 
 public class SiteScreen {
-    private Main mainApp;
+    private com.system.Main mainApp;
     private BorderPane view;
     private VBox contentArea;
     private SiteOrderController siteOrderController;
     private SiteInventoryController siteInventoryController;
 
-    public SiteScreen(Main mainApp) {
+    public SiteScreen(com.system.Main mainApp) {
         this.mainApp = mainApp;
         this.siteOrderController = new SiteOrderController();
         this.siteInventoryController = new SiteInventoryController();
@@ -44,7 +45,7 @@ public class SiteScreen {
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
-        btnLogout.setOnAction(e -> { SessionManager.logout(); mainApp.showLoginScreen(); });
+        btnLogout.setOnAction(e -> { com.system.application.auth.SessionManager.logout(); mainApp.showLoginScreen(); });
 
         sidebar.getChildren().addAll(lbl, btnOrder, btnInventory, btnProfile, btnLogout);
         view.setLeft(sidebar);
@@ -61,7 +62,7 @@ public class SiteScreen {
         Label t = new Label("Cập nhật thông tin Site");
         t.getStyleClass().add("header-title");
 
-        String siteCode = SessionManager.getCurrentUser() != null ? SessionManager.getCurrentUser().getSiteCode() : null;
+        String siteCode = com.system.application.auth.SessionManager.getCurrentUser() != null ? com.system.application.auth.SessionManager.getCurrentUser().getSiteCode() : null;
         if (siteCode == null) return;
 
         SiteManagementController smc = new SiteManagementController();
@@ -121,7 +122,7 @@ public class SiteScreen {
         TableColumn<InternationalOrder, String> c5 = new TableColumn<>("Trạng thái"); c5.setCellValueFactory(new PropertyValueFactory<>("status"));
         table.getColumns().addAll(c1, c2, c3, c4, c5);
 
-        String siteCode = SessionManager.getCurrentUser() != null ? SessionManager.getCurrentUser().getSiteCode() : null;
+        String siteCode = com.system.application.auth.SessionManager.getCurrentUser() != null ? com.system.application.auth.SessionManager.getCurrentUser().getSiteCode() : null;
         ObservableList<InternationalOrder> list = siteOrderController.getOrdersForSite(siteCode);
         table.setItems(list);
 
@@ -164,7 +165,7 @@ public class SiteScreen {
 
         table.getColumns().addAll(cId, cMerch, cQty);
 
-        String siteCode = SessionManager.getCurrentUser() != null ? SessionManager.getCurrentUser().getSiteCode() : null;
+        String siteCode = com.system.application.auth.SessionManager.getCurrentUser() != null ? com.system.application.auth.SessionManager.getCurrentUser().getSiteCode() : null;
         table.setItems(siteInventoryController.getInventory(siteCode));
 
         HBox bottomBar = new HBox(10);

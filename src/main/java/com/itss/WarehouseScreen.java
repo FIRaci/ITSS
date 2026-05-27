@@ -1,4 +1,5 @@
 package com.itss;
+import com.system.Main;
 
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -8,12 +9,12 @@ import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 public class WarehouseScreen {
-    private Main mainApp;
+    private com.system.Main mainApp;
     private BorderPane view;
     private VBox contentArea;
     private WarehouseController controller;
 
-    public WarehouseScreen(Main mainApp) {
+    public WarehouseScreen(com.system.Main mainApp) {
         this.mainApp = mainApp;
         this.controller = new WarehouseController();
         view = new BorderPane();
@@ -33,7 +34,7 @@ public class WarehouseScreen {
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
-        btnLogout.setOnAction(e -> { SessionManager.logout(); mainApp.showLoginScreen(); });
+        btnLogout.setOnAction(e -> { com.system.application.auth.SessionManager.logout(); mainApp.showLoginScreen(); });
 
         sidebar.getChildren().addAll(lbl, btnIn, btnLogout);
         view.setLeft(sidebar);
@@ -148,7 +149,7 @@ public class WarehouseScreen {
                 return;
             }
 
-            String user = SessionManager.getCurrentUser().getUsername();
+            String user = com.system.application.auth.SessionManager.getCurrentUser().getUsername();
             if (controller.reportDiscrepancy(order, cbReason.getValue(), qty, txtEvidence.getText(), txtNote.getText(), user)) {
                 showAlert("Thành công", "Đã lập biên bản sai lệch.");
                 showRTNPopup(order, cbReason.getValue(), qty);

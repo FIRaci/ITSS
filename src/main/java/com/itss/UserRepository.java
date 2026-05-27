@@ -11,7 +11,7 @@ public class UserRepository {
     
     public List<User> findAllUsers() {
         List<User> list = new ArrayList<>();
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT * FROM users ORDER BY id ASC")) {
             while (rs.next()) {
@@ -29,7 +29,7 @@ public class UserRepository {
     }
 
     public void deleteUser(int id) {
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement pstmt = conn.prepareStatement("DELETE FROM users WHERE id = ?")) {
             pstmt.setInt(1, id);
             pstmt.executeUpdate();
@@ -39,7 +39,7 @@ public class UserRepository {
     }
 
     public User findByUsername(String username) {
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement check = conn.prepareStatement("SELECT * FROM users WHERE username = ?")) {
             check.setString(1, username);
             ResultSet rs = check.executeQuery();
@@ -58,7 +58,7 @@ public class UserRepository {
     }
 
     public void updateUser(String username, String pass, String role) {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             String sql = pass.isEmpty() ? "UPDATE users SET role = ? WHERE username = ?" 
                                         : "UPDATE users SET role = ?, password = ? WHERE username = ?";
             PreparedStatement update = conn.prepareStatement(sql);
@@ -76,7 +76,7 @@ public class UserRepository {
     }
 
     public void insertUser(String username, String pass, String role) {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             if(pass.isEmpty()) pass = username + "123";
             PreparedStatement insert = conn.prepareStatement("INSERT INTO users (username, password, role) VALUES (?, ?, ?)");
             insert.setString(1, username);

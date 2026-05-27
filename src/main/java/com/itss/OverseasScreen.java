@@ -1,4 +1,5 @@
 package com.itss;
+import com.system.Main;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,14 +17,14 @@ import java.sql.ResultSet;
 import java.util.List;
 
 public class OverseasScreen {
-    private Main mainApp;
+    private com.system.Main mainApp;
     private BorderPane view;
     private VBox contentArea;
     private AllocationController allocationController;
     private CancellationController cancellationController;
     private SiteManagementController siteManagementController;
 
-    public OverseasScreen(Main mainApp) {
+    public OverseasScreen(com.system.Main mainApp) {
         this.mainApp = mainApp;
         this.allocationController = new AllocationController();
         this.cancellationController = new CancellationController();
@@ -65,7 +66,7 @@ public class OverseasScreen {
         btnLogout.setMaxWidth(Double.MAX_VALUE);
         btnLogout.getStyleClass().add("sidebar-btn");
         btnLogout.setOnAction(e -> {
-            SessionManager.logout();
+            com.system.application.auth.SessionManager.logout();
             mainApp.showLoginScreen();
         });
 
@@ -99,7 +100,7 @@ public class OverseasScreen {
         table.getColumns().addAll(colId, colStatus, colAcp, colDate);
 
         ObservableList<ImportRequest> list = FXCollections.observableArrayList();
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement("SELECT * FROM ImportRequest ORDER BY created_at DESC")) {
             ResultSet rs = ps.executeQuery();
             while(rs.next()) list.add(new ImportRequest(rs.getString("id"), rs.getString("status"), rs.getBoolean("is_accepted"), "", rs.getString("created_at")));

@@ -12,7 +12,7 @@ public class WarehouseRepository {
     public ObservableList<InternationalOrder> getIncomingOrders() {
         ObservableList<InternationalOrder> list = FXCollections.observableArrayList();
         String sql = "SELECT * FROM international_orders ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
@@ -28,7 +28,7 @@ public class WarehouseRepository {
     }
 
     public boolean receiveFullOrder(int orderId) {
-        try (Connection conn = Database.getConnection();
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection();
              PreparedStatement ps = conn.prepareStatement("UPDATE international_orders SET status = 'Đã nhập kho' WHERE id = ?")) {
             ps.setInt(1, orderId);
             ps.executeUpdate();
@@ -38,7 +38,7 @@ public class WarehouseRepository {
     }
 
     public boolean reportDiscrepancy(InternationalOrder order, String reason, int qty, String evidencePath, String note, String user) {
-        try (Connection conn = Database.getConnection()) {
+        try (Connection conn = com.system.infrastructure.persistence.Database.getConnection()) {
             conn.setAutoCommit(false);
             try {
                 PreparedStatement psReport = conn.prepareStatement("INSERT INTO discrepancy_reports (order_id, ycnh_id, site_code, note, evidence_path, created_by) VALUES (?, ?, ?, ?, ?, ?)", java.sql.Statement.RETURN_GENERATED_KEYS);
