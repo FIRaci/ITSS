@@ -9,6 +9,7 @@ import com.itss.Merchandise;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -17,6 +18,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
@@ -104,23 +106,29 @@ public class EditRequestForm_GUI {
         aSearchErr.setVisible(false);
 
         ListView<Merchandise> aSuggest = new ListView<>();
-        aSuggest.setPrefHeight(130);
-        aSuggest.setStyle("-fx-border-color: #94a3b8;");
-        aSuggest.setVisible(false);
-        aSuggest.setManaged(false);
+        aSuggest.setPrefWidth(380);
+        aSuggest.setPrefHeight(160);
+        aSuggest.setStyle("-fx-border-color: #94a3b8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 4);");
+
+        Popup aPopup = new Popup();
+        aPopup.setAutoHide(true);
+        aPopup.getContent().add(aSuggest);
 
         aSearch.addEventHandler(KeyEvent.KEY_RELEASED, ev -> {
             String kw = aSearch.getText().trim();
             aSearchErr.setVisible(false);
-            if (kw.isEmpty()) { aSuggest.setVisible(false); aSuggest.setManaged(false); return; }
+            aSearchErr.setManaged(false);
+            if (kw.isEmpty()) { aPopup.hide(); return; }
             List<Merchandise> results = merchandiseUseCase.search(kw);
             if (results.isEmpty()) {
-                aSuggest.setVisible(false); aSuggest.setManaged(false);
-                aSearchErr.setText("Không tìm thấy mặt hàng."); aSearchErr.setVisible(true);
+                aPopup.hide();
+                aSearchErr.setText("Không tìm thấy mặt hàng.");
+                aSearchErr.setVisible(true); aSearchErr.setManaged(true);
             } else {
                 aSuggest.setItems(FXCollections.observableArrayList(results));
-                aSuggest.setVisible(true); aSuggest.setManaged(true);
-                aSearchErr.setVisible(false);
+                Bounds bounds = aSearch.localToScreen(aSearch.getBoundsInLocal());
+                if (bounds != null) aPopup.show(stage, bounds.getMinX(), bounds.getMaxY() + 2);
+                aSearchErr.setVisible(false); aSearchErr.setManaged(false);
             }
         });
 
@@ -128,7 +136,7 @@ public class EditRequestForm_GUI {
         aSuggest.setOnMouseClicked(ev -> {
             Merchandise sel = aSuggest.getSelectionModel().getSelectedItem();
             if (sel == null) return;
-            aSuggest.setVisible(false); aSuggest.setManaged(false);
+            aPopup.hide();
             aSearch.clear();
             // Kiểm tra trùng
             boolean dup = editingList.stream()
@@ -137,7 +145,9 @@ public class EditRequestForm_GUI {
             showAddItemPopup(stage, sel, editingList, importRequest, table);
         });
 
-        VBox addNewSection = new VBox(6, lblAddNew, aSearch, aSearchErr, aSuggest);
+        aSearch.focusedProperty().addListener((obs, was, now) -> { if (!now) aPopup.hide(); });
+
+        VBox addNewSection = new VBox(6, lblAddNew, aSearch, aSearchErr);
         addNewSection.setStyle("-fx-border-color: #e2e8f0; -fx-border-radius: 8; -fx-background-color: #f8fafc; -fx-padding: 10;");
 
 

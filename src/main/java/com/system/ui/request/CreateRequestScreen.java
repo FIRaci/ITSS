@@ -7,6 +7,7 @@ import com.itss.Merchandise;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -15,6 +16,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.stage.Modality;
+import javafx.stage.Popup;
 import javafx.stage.Stage;
 
 import java.time.LocalDate;
@@ -72,36 +74,44 @@ public class CreateRequestScreen {
         Label lblSearchError = new Label();
         lblSearchError.setStyle("-fx-text-fill: #ef4444; -fx-font-size: 12px;");
         lblSearchError.setVisible(false);
+        lblSearchError.setManaged(false);
 
-        // Popup danh sách gợi ý (hiện ngay bên dưới thanh tìm kiếm)
+        // Dropdown gợi ý dùng Popup để nổi lên trên layout, không đẩy content xuống
         ListView<Merchandise> suggestionList = new ListView<>();
-        suggestionList.setPrefHeight(160);
-        suggestionList.setStyle("-fx-border-color: #94a3b8; -fx-border-radius: 6; -fx-background-radius: 6;");
-        suggestionList.setVisible(false);
-        suggestionList.setManaged(false);
+        suggestionList.setPrefWidth(450);
+        suggestionList.setPrefHeight(180);
+        suggestionList.setStyle("-fx-border-color: #94a3b8; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.15), 8, 0, 0, 4);");
 
-        VBox searchBox = new VBox(6, txtSearch, lblSearchError, suggestionList);
+        Popup suggestionPopup = new Popup();
+        suggestionPopup.setAutoHide(true);
+        suggestionPopup.getContent().add(suggestionList);
+
+        VBox searchBox = new VBox(4, txtSearch, lblSearchError);
 
         // Xử lý nhập từ khóa → gợi ý
         txtSearch.addEventHandler(KeyEvent.KEY_RELEASED, evt -> {
             String kw = txtSearch.getText().trim();
             lblSearchError.setVisible(false);
+            lblSearchError.setManaged(false);
             if (kw.isEmpty()) {
-                suggestionList.setVisible(false);
-                suggestionList.setManaged(false);
+                suggestionPopup.hide();
                 return;
             }
             List<Merchandise> results = merchandiseUseCase.search(kw);
             if (results.isEmpty()) {
-                suggestionList.setVisible(false);
-                suggestionList.setManaged(false);
+                suggestionPopup.hide();
                 lblSearchError.setText("Không tìm thấy mặt hàng phù hợp.");
                 lblSearchError.setVisible(true);
+                lblSearchError.setManaged(true);
             } else {
                 suggestionList.setItems(FXCollections.observableArrayList(results));
-                suggestionList.setVisible(true);
-                suggestionList.setManaged(true);
+                // Hiện popup ngay bên dưới ô tìm kiếm
+                Bounds bounds = txtSearch.localToScreen(txtSearch.getBoundsInLocal());
+                if (bounds != null) {
+                    suggestionPopup.show(stage, bounds.getMinX(), bounds.getMaxY() + 2);
+                }
                 lblSearchError.setVisible(false);
+                lblSearchError.setManaged(false);
             }
         });
 
@@ -109,11 +119,15 @@ public class CreateRequestScreen {
         suggestionList.setOnMouseClicked(evt -> {
             Merchandise selected = suggestionList.getSelectionModel().getSelectedItem();
             if (selected != null) {
-                suggestionList.setVisible(false);
-                suggestionList.setManaged(false);
+                suggestionPopup.hide();
                 txtSearch.clear();
                 showDetailInputPopup(stage, selected, detailsList);
             }
+        });
+
+        // Ẩn popup khi mất focus
+        txtSearch.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
+            if (!isNowFocused) suggestionPopup.hide();
         });
 
         // ─── Bảng danh sách mặt hàng đã thêm ──────────────────────────────
