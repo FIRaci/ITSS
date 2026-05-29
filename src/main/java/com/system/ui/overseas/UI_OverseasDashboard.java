@@ -1,18 +1,18 @@
 package com.system.ui.overseas;
 
 import com.system.Main;
-import com.system.application.overseas.ManageCancellationUseCase;
 import com.system.application.overseas.ManageSiteUseCase;
 import com.system.application.request.ViewRequestDetailUseCase;
 import com.system.infrastructure.persistence.OrderRepositoryImpl;
-import com.itss.CancellationRequest;
 import com.itss.ImportRequest;
 import com.itss.InternationalOrder;
 import com.itss.Site;
+import com.system.ui.order.CancelProcessingScreen;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
+import javafx.stage.Stage;
 
 public class UI_OverseasDashboard {
     private Main mainApp;
@@ -20,14 +20,12 @@ public class UI_OverseasDashboard {
     private VBox contentArea;
     
     private ManageSiteUseCase manageSiteUseCase;
-    private ManageCancellationUseCase manageCancellationUseCase;
     private ViewRequestDetailUseCase viewRequestUseCase;
     private OrderRepositoryImpl orderRepository;
 
     public UI_OverseasDashboard(Main mainApp) {
         this.mainApp = mainApp;
         this.manageSiteUseCase = new ManageSiteUseCase();
-        this.manageCancellationUseCase = new ManageCancellationUseCase();
         this.viewRequestUseCase = new ViewRequestDetailUseCase();
         this.orderRepository = new OrderRepositoryImpl();
         
@@ -62,7 +60,7 @@ public class UI_OverseasDashboard {
         Button btnCancel = new Button("Xử lý đơn hàng hủy");
         btnCancel.setMaxWidth(Double.MAX_VALUE);
         btnCancel.getStyleClass().add("sidebar-btn");
-        btnCancel.setOnAction(e -> showCancellationManagement());
+        btnCancel.setOnAction(e -> new CancelProcessingScreen(new Stage()).show());
 
         Button btnLogout = new Button("Đăng xuất");
         btnLogout.setMaxWidth(Double.MAX_VALUE);
@@ -232,62 +230,6 @@ public class UI_OverseasDashboard {
         table.setItems(orderRepository.findAllOrders());
 
         VBox card = new VBox(20, title, table);
-        card.getStyleClass().add("card");
-        VBox.setVgrow(table, Priority.ALWAYS);
-        contentArea.getChildren().addAll(card);
-    }
-
-    // ================= 4. XỬ LÝ HỦY ĐƠN HÀNG =================
-    private void showCancellationManagement() {
-        contentArea.getChildren().clear();
-        Label title = new Label("Phê duyệt Yêu Cầu Hủy Đơn Hàng (Từ Warehouse / Site)");
-        title.getStyleClass().add("header-title");
-
-        TableView<CancellationRequest> table = new TableView<>();
-        table.getStyleClass().add("table-view");
-        TableColumn<CancellationRequest, Integer> c1 = new TableColumn<>("Mã Hủy"); c1.setCellValueFactory(new PropertyValueFactory<>("id"));
-        TableColumn<CancellationRequest, Integer> c2 = new TableColumn<>("Mã ĐH"); c2.setCellValueFactory(new PropertyValueFactory<>("orderId"));
-        TableColumn<CancellationRequest, String> c3 = new TableColumn<>("Lý do"); c3.setCellValueFactory(new PropertyValueFactory<>("reason"));
-        TableColumn<CancellationRequest, String> c4 = new TableColumn<>("Trạng thái"); c4.setCellValueFactory(new PropertyValueFactory<>("status"));
-        TableColumn<CancellationRequest, String> c5 = new TableColumn<>("Thời gian"); c5.setCellValueFactory(new PropertyValueFactory<>("requestedAt"));
-
-        table.getColumns().addAll(c1, c2, c3, c4, c5);
-        table.setItems(manageCancellationUseCase.getPendingCancellations());
-
-        Button btnApprove = new Button("Duyệt Hủy"); btnApprove.getStyleClass().add("btn-danger");
-        Button btnReject = new Button("Từ chối Hủy"); btnReject.getStyleClass().add("btn-secondary");
-
-        btnApprove.setDisable(true); btnReject.setDisable(true);
-        table.getSelectionModel().selectedItemProperty().addListener((obs, ov, nv) -> {
-            boolean disable = (nv == null || !nv.getStatus().equals("CHỜ DUYỆT"));
-            btnApprove.setDisable(disable);
-            btnReject.setDisable(disable);
-        });
-
-        btnApprove.setOnAction(e -> {
-            CancellationRequest sel = table.getSelectionModel().getSelectedItem();
-            if(sel != null) {
-                try {
-                    manageCancellationUseCase.approveCancellation(sel.getId(), sel.getOrderId());
-                    showSuccessPopup("Đã duyệt hủy đơn hàng!");
-                    table.setItems(manageCancellationUseCase.getPendingCancellations());
-                } catch(Exception ex) { showAlert("Lỗi", ex.getMessage()); }
-            }
-        });
-
-        btnReject.setOnAction(e -> {
-            CancellationRequest sel = table.getSelectionModel().getSelectedItem();
-            if(sel != null) {
-                try {
-                    manageCancellationUseCase.rejectCancellation(sel.getId(), sel.getOrderId());
-                    showSuccessPopup("Đã từ chối yêu cầu hủy!");
-                    table.setItems(manageCancellationUseCase.getPendingCancellations());
-                } catch(Exception ex) { showAlert("Lỗi", ex.getMessage()); }
-            }
-        });
-
-        HBox actions = new HBox(12, btnApprove, btnReject);
-        VBox card = new VBox(20, title, table, actions);
         card.getStyleClass().add("card");
         VBox.setVgrow(table, Priority.ALWAYS);
         contentArea.getChildren().addAll(card);

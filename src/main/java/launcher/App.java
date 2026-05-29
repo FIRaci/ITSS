@@ -27,7 +27,7 @@ public class App extends Application {
         btnUC3.setOnAction(e -> new boundary.uc3.RequestDetailScreen(new Stage()).show());
 
         Button btnUC4 = new Button("UC4 - Xử lý hủy (Thanh Liêm)");
-        btnUC4.setOnAction(e -> new boundary.uc4.CancellationScreen(new Stage()).show());
+        btnUC4.setOnAction(e -> new com.system.ui.order.CancelProcessingScreen(new Stage()).show());
 
         Button btnUC5 = new Button("UC5 - Phân bổ & xử lý (Thế Đạt)");
         btnUC5.setOnAction(e -> new boundary.uc5.OverseasDashboard(new Stage()).show());

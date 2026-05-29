@@ -21,7 +21,7 @@ public class OverseasDashboard {
         btnAllocate.setOnAction(e -> new OrderAllocationScreen(new Stage()).show());
 
         Button btnCancel = new Button("Xử lý hủy đơn");
-        btnCancel.setOnAction(e -> new boundary.uc4.CancellationScreen(new Stage()).show());
+        btnCancel.setOnAction(e -> new com.system.ui.order.CancelProcessingScreen(new Stage()).show());
 
         root.getChildren().addAll(
             new Label("OVERSEAS DASHBOARD"),
