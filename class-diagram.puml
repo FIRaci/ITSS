@@ -1,0 +1,387 @@
+@startuml
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam defaultFontName "Segoe UI"
+skinparam backgroundColor #FEFEFE
+skinparam class {
+    BorderColor #2C3E50
+    BackgroundColor #ECF0F1
+    HeaderBackgroundColor #34495E
+    FontColor #2C3E50
+}
+skinparam package {
+    BorderColor #2980B9
+    BackgroundColor #EAF2F8
+    FontColor #2980B9
+}
+
+package "com.itss" {
+    ' ====== INFRASTRUCTURE ======
+    class App {
+        + {static} main(String[]): void
+    }
+
+    class Main {
+        - primaryStage: Stage
+        + start(Stage): void
+        - createStyledScene(Parent, double, double): Scene
+        + showLoginScreen(): void
+        + navigateNext(): void
+        + {static} main(String[]): void
+    }
+    Main -|> javafx.application.Application
+
+    class Database {
+        - {static} URL: String
+        - {static} USER: String
+        - {static} PASSWORD: String
+        + {static} getConnection(): Connection
+    }
+
+    class SessionManager {
+        - {static} currentUser: User
+        + {static} getCurrentUser(): User
+        + {static} login(String, String): boolean
+        + {static} logout(): void
+    }
+
+    ' ====== MODELS ======
+    class User {
+        - id: int
+        - username: String
+        - role: String
+        - siteCode: String
+        + User(int, String, String, String)
+        + User(String, String)
+        + getId(): int
+        + getUsername(): String
+        + getRole(): String
+        + getSiteCode(): String
+        + setUsername(String): void
+        + setRole(String): void
+        + setSiteCode(String): void
+    }
+
+    class Ycnh {
+        - id: String
+        - status: String
+        - isAccepted: boolean
+        - createdBy: String
+        - createdAt: String
+        + Ycnh(String, String, boolean, String, String)
+        + getters/setters
+    }
+
+    class YcnhChiTiet {
+        - id: int
+        - ycnhId: String
+        - merchandiseCode: String
+        - quantity: int
+        - unit: String
+        - desiredDeliveryDate: String
+        - uiAction: String
+        + YcnhChiTiet(...)
+        + getters/setters
+        + clone(): YcnhChiTiet
+    }
+
+    class YcnhHistory {
+        - id: int
+        - ycnhId: String
+        - actionType: String
+        - changedBy: String
+        - diffText: String
+        - reason: String
+        - changedAt: String
+        + YcnhHistory(...)
+        + getters only
+    }
+
+    class Site {
+        - id: int
+        - siteCode: String
+        - name: String
+        - daysShip: int
+        - daysAir: int
+        - otherInfo: String
+        + Site(...)
+        + getters: id, siteCode, name
+        + getters/setters: daysShip, daysAir, otherInfo
+    }
+
+    class SiteInventory {
+        - id: int
+        - siteCode: String
+        - merchandiseCode: String
+        - stockQty: int
+        + SiteInventory(...)
+        + getters only
+    }
+
+    class SiteTransportLog {
+        - id: int
+        - siteCode: String
+        - oldDaysShip: int
+        - newDaysShip: int
+        - oldDaysAir: int
+        - newDaysAir: int
+        - note: String
+        - changedBy: String
+        - changedAt: String
+        + SiteTransportLog(...)
+        + getters only
+    }
+
+    class InternationalOrder {
+        - id: int
+        - ycnhId: String
+        - siteCode: String
+        - merchandiseCode: String
+        - qty: int
+        - shippingMethod: String
+        - status: String
+        + InternationalOrder(...)
+        + getters: all fields
+        + setStatus(String): void
+    }
+
+    class OrderStatusHistory {
+        - id: int
+        - orderId: int
+        - oldStatus: String
+        - newStatus: String
+        - note: String
+        - changedBy: String
+        - changedAt: String
+        + OrderStatusHistory(...)
+        + getters only
+    }
+
+    class CancellationRequest {
+        - id: int
+        - orderId: int
+        - reason: String
+        - status: String
+        - createdBy: String
+        - createdAt: String
+        - handledBy: String
+        - handledAt: String
+        + CancellationRequest(...)
+        + getters only
+    }
+
+    class DiscrepancyReport {
+        - id: int
+        - orderId: int
+        - ycnhId: String
+        - siteCode: String
+        - note: String
+        - evidencePath: String
+        - status: String
+        - createdBy: String
+        - createdAt: String
+        + DiscrepancyReport(...)
+        + getters only
+    }
+
+    class DiscrepancyItem {
+        - id: int
+        - reportId: int
+        - merchandiseCode: String
+        - qtyReported: int
+        - reason: String
+        + DiscrepancyItem(...)
+        + getters only
+    }
+
+    ' ====== UI SCREENS ======
+    class LoginScreen {
+        - mainApp: Main
+        - view: VBox
+        + LoginScreen(Main)
+        - buildView(): void
+        + getView(): VBox
+    }
+
+    class AdminScreen {
+        - mainApp: Main
+        - view: VBox
+        - table: TableView<User>
+        - userList: ObservableList<User>
+        + AdminScreen(Main)
+        - buildView(): void
+        - loadData(): void
+        - deleteUser(int): void
+        - addOrUpdateUser(String, String, String): void
+        + getView(): VBox
+    }
+
+    class SalesScreen {
+        - mainApp: Main
+        - view: BorderPane
+        - contentArea: VBox
+        + SalesScreen(Main)
+        - buildView(): void
+        - showYcnhList(): void
+        - setupYcnhTable(TableView<Ycnh>): void
+        - fetchYcnhMaster(String): ObservableList<Ycnh>
+        - showDetailsTablePopup(Ycnh): void
+        - setupDetailTable(TableView<YcnhChiTiet>): void
+        - fetchDetails(String): ObservableList<YcnhChiTiet>
+        - showAddMasterPopup(Runnable): void
+        - showEditMasterPopup(Ycnh, Runnable): void
+        - showDiffReviewPopup(...): void
+        - applyUpdatesToDb(...): void
+        - showHistory(): void
+        - showAlert(String, String): void
+        - showSuccessPopup(String): void
+        + getView(): BorderPane
+    }
+
+    class OverseasScreen {
+        - mainApp: Main
+        - view: BorderPane
+        - contentArea: VBox
+        + OverseasScreen(Main)
+        - buildView(): void
+        - showYcnhManagement(): void
+        - processYcnh(String): void
+        - buildAllocationPlan(String): List<AllocationRow>
+        - loadSiteStocks(Connection, String, LocalDate): List<SiteStock>
+        - persistOrders(String, List<AllocationRow>): boolean
+        - showSiteManagement(): void
+        - showAddSitePopup(Runnable): void
+        - showUpdateTransportPopup(SiteModel, Runnable): void
+        - isAbnormalChange(int, int): boolean
+        - showOrders(): void
+        - showCancellationManagement(): void
+        - showReplacementPlan(InternationalOrder, Runnable): void
+        - buildAllocationPlanForItem(String, int, LocalDate): List<AllocationRow>
+        - loadDesiredDate(String, String): LocalDate
+        - persistReplacementOrders(InternationalOrder, List<AllocationRow>): boolean
+        - handleCancelOrder(InternationalOrder, Runnable): void
+        - showAlert(String, String): void
+        + getView(): BorderPane
+    }
+
+    class SiteModel {
+        - code: String
+        - name: String
+        - daysShip: int
+        - daysAir: int
+        + SiteModel(String, String, int, int)
+        + getCode(): String
+        + getName(): String
+        + getDaysShip(): int
+        + getDaysAir(): int
+    }
+    OverseasScreen +-- SiteModel
+
+    class AllocationRow {
+        - merchandiseCode: String
+        - siteCode: String
+        - qty: int
+        - shippingMethod: String
+        + AllocationRow(String, String, int, String)
+        + getMerchandiseCode(): String
+        + getSiteCode(): String
+        + getQty(): int
+        + getShippingMethod(): String
+    }
+    OverseasScreen +-- AllocationRow
+
+    class SiteStock {
+        - siteCode: String
+        - stockQty: int
+        - shippingMethod: String
+        - prefRank: int
+        - daysShip: int
+        - daysAir: int
+        + SiteStock(String, int, String, int, int, int)
+    }
+    OverseasScreen +-- SiteStock
+
+    class WarehouseScreen {
+        - mainApp: Main
+        - view: BorderPane
+        - contentArea: VBox
+        + WarehouseScreen(Main)
+        - buildView(): void
+        - showCheckIn(): void
+        - showDiscrepancyForm(InternationalOrder): void
+        - saveDiscrepancy(InternationalOrder, String, int, String, String): void
+        - updateOrderStatus(int, String): void
+        - showAlert(String, String): void
+        + getView(): BorderPane
+    }
+
+    class SiteScreen {
+        - mainApp: Main
+        - view: BorderPane
+        - contentArea: VBox
+        + SiteScreen(Main)
+        - buildView(): void
+        - showOrders(): void
+        + getView(): BorderPane
+    }
+
+    ' ====== RELATIONSHIPS ======
+
+    ' Infrastructure relationships
+    App ..> Main : calls Main.main()
+
+    SessionManager --> User : holds currentUser
+    SessionManager ..> Database : getConnection()
+
+    LoginScreen --> Main : mainApp
+    AdminScreen --> Main : mainApp
+    SalesScreen --> Main : mainApp
+    OverseasScreen --> Main : mainApp
+    WarehouseScreen --> Main : mainApp
+    SiteScreen --> Main : mainApp
+
+    LoginScreen ..> SessionManager : login()
+    AdminScreen ..> SessionManager : getCurrentUser(), logout()
+    SalesScreen ..> SessionManager : getCurrentUser(), logout()
+    OverseasScreen ..> SessionManager : getCurrentUser(), logout()
+    WarehouseScreen ..> SessionManager : getCurrentUser(), logout()
+    SiteScreen ..> SessionManager : getCurrentUser(), logout()
+
+    AdminScreen ..> Database : getConnection()
+    SalesScreen ..> Database : getConnection()
+    OverseasScreen ..> Database : getConnection()
+    WarehouseScreen ..> Database : getConnection()
+    SiteScreen ..> Database : getConnection()
+    LoginScreen ..> Database : getConnection()
+
+    ' Navigation: Main creates all screens
+    Main ..> LoginScreen : creates >
+    Main ..> AdminScreen : creates >
+    Main ..> SalesScreen : creates >
+    Main ..> OverseasScreen : creates >
+    Main ..> WarehouseScreen : creates >
+    Main ..> SiteScreen : creates >
+    Main ..> SessionManager : getCurrentUser(), logout()
+
+    ' Model usage by screens
+    SalesScreen --> Ycnh : TableView
+    SalesScreen --> YcnhChiTiet : TableView
+    SalesScreen --> YcnhHistory : TableView
+    OverseasScreen --> Ycnh : TableView
+    OverseasScreen --> Site : TableView
+    OverseasScreen --> InternationalOrder : TableView
+    OverseasScreen --> CancellationRequest : TableView
+    WarehouseScreen --> InternationalOrder : TableView
+    WarehouseScreen --> DiscrepancyReport : creates
+    WarehouseScreen --> DiscrepancyItem : creates
+    SiteScreen --> InternationalOrder : TableView
+    AdminScreen --> User : TableView
+}
+
+' External library classes (simplified)
+class javafx.application.Application {
+    + start(Stage): void
+    + {static} launch(String[]): void
+}
+
+@enduml
