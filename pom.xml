@@ -44,7 +44,6 @@
                 <configuration>
                     <mainClass>com.itss.App</mainClass>
                     <options>
-                        <option>-XstartOnFirstThread</option>
                         <option>--enable-native-access=javafx.graphics</option>
                     </options>
                 </configuration>
