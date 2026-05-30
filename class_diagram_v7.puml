@@ -1,0 +1,1199 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam monochrome false
+skinparam class {
+    BackgroundColor white
+    ArrowColor #2C3E50
+    BorderColor #2C3E50
+}
+
+' ==========================================
+' BOUNDARY LAYER
+' ==========================================
+package "Boundary Layer" {
+
+    ' [FIX-DRY] BaseScreen tập trung displayError / displaySuccess — xóa khỏi tất cả subclass
+    abstract class BaseScreen <<boundary>> {
+        +displayError(msg : String) : void
+        +displaySuccess(msg : String) : void
+        +showPopup(msg : String) : void
+    }
+
+    ' --- BPBH ---
+    class ItemDetailPopup <<boundary>> {
+        +displayPopup() : void
+        +enterQuantity() : void
+        +enterUnit() : void
+        +enterDesiredDeliveryDate() : void
+        +displayInputError() : void
+    }
+
+    class CreateImportRequestScreen <<boundary>> {
+        +displayCreateRequestScreen() : void
+        +enterMerchandiseCode() : void
+        +displayMerchandiseInfo(merchandiseId : String) : void
+        +updateMerchandiseList() : void
+        +displayNotification(notificationId : int) : void
+    }
+
+    class EditRequestForm_GUI <<boundary>> {
+        +openForm(requestId : String) : void
+        +displayOldData(data : Object) : void
+        +displayDiff(oldData : Object, newData : Object) : void
+        +enterEditReason() : String
+        +displayNotification(msg : String) : void
+        +showHighImpactWarningDialog() : void
+        ' [FIX-BRD] NV2-TH3: trigger hủy draft từ UI
+        +onCancelEdit() : void
+    }
+
+    class MerchandiseManagementScreen <<boundary>> {
+        +displayMerchandiseList() : void
+        +openAddForm() : void
+        +openEditForm(merchandiseId : String) : void
+        +confirmDeactivate(merchandiseId : String) : void
+    }
+
+    ' --- ĐHQT ---
+    class UI_RequestList <<boundary>> {
+        +displayList() : void
+        +selectRequest(requestId : String) : void
+    }
+
+    class UI_RequestDetail <<boundary>> {
+        +displayDetail(data : Object) : void
+        +closeScreen() : void
+    }
+
+    class AllocationScreen <<boundary>> {
+        +selectImportRequest(requestId : String) : void
+        +displayRequest(requestId : String) : void
+        +selectAllocationLogic(logicId : String) : void
+        +requestSiteInput() : void
+        +enterSiteName(siteName : String) : void
+        +displayNotification() : void
+        +requestReallocationLogic(logicId : String) : void
+    }
+
+    class OrderFinalizationScreen <<boundary>> {
+        +updateRequestStatus(requestId : String) : void
+        +displayNewStatus() : void
+        +confirmCompletion() : void
+        +displayCompletionNotification() : void
+        +displayFinalStatus() : void
+    }
+
+    class SiteManagementScreen <<boundary>> {
+        +displaySiteList() : void
+        +openAddSiteForm() : void
+        +openEditSiteForm(siteCode : String) : void
+    }
+
+    class OverseasOrderManagementScreen <<boundary>> {
+        +displayOrderList() : void
+        +openEditOrderForm(orderId : String) : void
+    }
+
+    class CancelProcessingScreen <<boundary>> {
+        ' NV8-TH1: hàng đã on-board — hiển thị lỗi và hướng dẫn quy trình hoàn
+        +displayOnBoardError() : void
+        ' NV8-TH2: hàng chưa on-board — xác nhận hủy và cập nhật trạng thái
+        +displayCancelConfirmation(orderId : String) : void
+        +displayCancelSuccess(orderId : String) : void
+    }
+
+    class ErrorHandlingScreen <<boundary>> {
+        +displayApprovalRequest() : void
+        +displayDraftPlan(proposals : List<ProposalDTO>) : void
+        +notifyResult(status : String) : void
+        +showConfirmationDialog() : void
+    }
+
+    ' [FIX-BRD] NV8-TH4/TH5: màn hình BPBH phê duyệt/từ chối phương án thay thế
+    class ApprovalScreen <<boundary>> {
+        +displayProposalDetail(proposal : ProposalDTO) : void
+        +enterRejectionReason() : String
+        +confirmDecision() : void
+    }
+
+    ' --- Kho nội bộ ---
+    class InboundListScreen <<boundary>> {
+        +displayRequestList() : void
+        +showOrderLockedNotification() : void
+        +selectOrder(orderId : String) : void
+    }
+
+    class InboundVerifyScreen <<boundary>> {
+        -orderId : String
+        -actualQty : int
+        +showVerificationScreen(orderData : Object) : void
+        +displayItemList() : void
+        +responseSuccess() : void
+        +generateGRNSuccess() : void
+    }
+
+    class DiscrepancyFormScreen <<boundary>> {
+        -damageImage : Image
+        +showDiscrepancyForm() : void
+        +uploadImageAndEnterReason() : void
+        +requestConfirmTempStorage() : void
+        +confirm7DayTempStorage() : void
+    }
+
+    ' --- Site Portal ---
+    class SiteOrderScreen <<boundary>> {
+        +displayIncomingOrders() : void
+        +confirmPackaging(orderId : String) : void
+    }
+
+    class SiteProfileScreen <<boundary>> {
+        +updateProfile(siteCode : String) : void
+    }
+
+    class SiteInventoryScreen <<boundary>> {
+        +syncInventory(siteCode : String) : void
+        +addMerchandise(siteCode : String, merchandiseId : String) : void
+    }
+
+    ' --- Admin ---
+    class AdminUserManagementScreen <<boundary>> {
+        +displayUserList() : void
+        +openCreateUserForm() : void
+        +selectRole(roleId : String) : void
+        +lockAccount(userId : String) : void
+    }
+
+    ' Inheritance — tất cả screen kế thừa BaseScreen
+    BaseScreen <|-- CreateImportRequestScreen
+    BaseScreen <|-- EditRequestForm_GUI
+    BaseScreen <|-- MerchandiseManagementScreen
+    BaseScreen <|-- UI_RequestList
+    BaseScreen <|-- AllocationScreen
+    BaseScreen <|-- OrderFinalizationScreen
+    BaseScreen <|-- SiteManagementScreen
+    BaseScreen <|-- OverseasOrderManagementScreen
+    BaseScreen <|-- CancelProcessingScreen
+    BaseScreen <|-- ErrorHandlingScreen
+    BaseScreen <|-- ApprovalScreen
+    BaseScreen <|-- InboundListScreen
+    BaseScreen <|-- InboundVerifyScreen
+    BaseScreen <|-- DiscrepancyFormScreen
+    BaseScreen <|-- SiteOrderScreen
+    BaseScreen <|-- SiteProfileScreen
+    BaseScreen <|-- SiteInventoryScreen
+    BaseScreen <|-- AdminUserManagementScreen
+}
+
+' ==========================================
+' CONTROL LAYER
+' ==========================================
+package "Control Layer" {
+
+    ' --- BPBH Controllers ---
+    class CreateImportRequestController <<control>> {
+        +openCreateRequestScreen() : void
+        +checkMerchandiseCode(merchandiseId : String) : void
+        +openDetailPopup(merchandiseId : String) : void
+        +validateInputData(quantity : int, unit : String, deliveryDate : Date) : void
+        +addToTemporaryList(merchandiseId : String, quantity : int, unit : String, deliveryDate : Date) : void
+        +submitRequest() : void
+    }
+
+    class EditRequestController <<control>> {
+        +getRequestInfo(requestId : String) : Object
+        +checkChanges(newList : List<RequestDetail>) : boolean
+        ' [FIX-SRP] Tách phát hiện over-edit ra method riêng, trả kết quả EditResult
+        +detectHighImpactChange(oldQty : int, newQty : int) : boolean
+        +saveEdits(requestId : String, reason : String) : EditResult
+        ' [FIX-NV2-TH2] recordFailedAttempt ghi ChangeLog entry actionType="FAILED_EDIT_ATTEMPT"
+        ' — không chỉ increment counter, mỗi attempt có nhật ký chi tiết (người, thời gian, lỗi)
+        +recordFailedAttempt(requestId : String) : void
+        +confirmUpdate(requestId : String) : boolean
+        ' [FIX-BRD] NV2-TH3: hủy draft — xóa cache, không tạo log, không tăng version
+        +cancelDraft(requestId : String) : void
+    }
+
+    class MerchandiseController <<control>> {
+        +getMerchandiseList(filter : String) : List<Merchandise>
+        +getMerchandiseById(merchandiseId : String) : Merchandise
+        +createMerchandise(data : Object) : void
+        +deactivateMerchandise(merchandiseId : String) : void
+    }
+
+    ' --- ĐHQT Controllers ---
+    class RequestController <<control>> {
+        +getRequestDetail(requestId : String) : Object
+        +validateData(info : ImportRequestDTO) : Boolean
+        +fetchLiveTracking(orderId : String) : Object
+    }
+
+    class AllocationController <<control>> {
+        +getRequest(requestId : String) : void
+        +selectLogic(logicId : String) : void
+        +enterSiteName(siteName : String) : void
+        ' Nhận AllocationResult từ AllocationFacade (giảm coupling — facade gọi service + notification)
+        +buildConfigAndAllocate() : AllocationResult
+        +backToLogicSelection() : void
+    }
+
+    ' [FIX] AllocationFacade: điều phối AllocationService + NotificationService
+    ' Giảm số dependency của AllocationController từ 3 xuống 1
+    class AllocationFacade <<service>> {
+        +processAllocation(requestId : String, config : AllocationConfig) : AllocationResult
+    }
+
+    ' ImportProcessingApplicationService: Saga điều phối luồng phân bổ → tạo đơn
+    ' Tránh AllocationController và OrderFinalizationController chia sẻ
+    ' IImportRequestRepository + IOrderRepository trùng lặp nhau
+    class ImportProcessingApplicationService <<service>> {
+        +processAllocationAndFinalizeOrders(requestId : String, config : AllocationConfig) : void
+    }
+
+    class OrderFinalizationController <<control>> {
+        ' Chỉ xử lý UI flow xác nhận — delegate xuống ImportProcessingApplicationService
+        +requestUpdate(requestId : String) : void
+        +requestFinalizeOrder(requestId : String) : void
+    }
+
+    class SiteManagementController <<control>> {
+        +getSiteList() : List<Site>
+        +createSite(data : Object) : void
+        +updateSiteDeliveryDays(siteCode : String, seaDays : int, airDays : int) : void
+    }
+
+    class OverseasOrderController <<control>> {
+        +getOrderList() : List<OverseasOrder>
+        +getOrderById(orderId : String) : OverseasOrder
+        +updateOrder(orderId : String, data : Object) : void
+    }
+
+    class CancelController <<control>> {
+        +checkOnBoardStatus(orderId : String) : boolean
+        +processCancel(id : String) : void
+        +confirmCancellation() : void
+    }
+
+    class ErrorResolutionController <<control>> {
+        ' [FIX] Dùng InventorySearchService.scanSiteInventory() — không phụ thuộc AllocationService
+        +confirmSave() : void
+        +submitApprovalRequest() : void
+    }
+
+    ' [FIX-BRD] NV8-TH4/TH5: ApprovalController thuộc phân hệ BPBH — tách biệt khỏi ĐHQT
+    ' approveProposal/rejectProposal là quyết định kinh doanh của BPBH quản lý, không của ĐHQT
+    class ApprovalController <<control>> {
+        +getProposalDetail(proposalId : String) : ProposalDTO
+        +approveProposal(proposalId : String) : void
+        +rejectProposal(proposalId : String, reason : String) : void
+    }
+
+    ' --- Kho nội bộ Controllers ---
+    ' [FIX-SRP/Coupling] Tách InboundController thành 2 controller riêng theo luồng
+    class InboundController <<control>> {
+        ' Luồng UC13-14: tra cứu & xem chi tiết đơn nhập kho
+        +getPendingRequests() : void
+        +requestOrderDetails(orderId : String) : void
+        +validateActualQty(actualQty : int) : void
+        +executeDataCommit() : void
+    }
+
+    class DiscrepancyController <<control>> {
+        ' Luồng UC15 nhánh sai lệch: xử lý thừa/thiếu/hỏng
+        +saveTemporaryStatus(status : String) : void
+        +confirmDiscrepancy(orderId : String) : void
+        +closeDiscrepancy(orderId : String) : void
+    }
+
+    ' --- Site Controllers ---
+    ' [FIX-SRP/ISP/Coupling] Tách SitePortalController thành 3 controller riêng biệt
+    class SiteOrderController <<control>> {
+        ' NV12: Quản lý đơn hàng Site
+        +confirmPackaging(orderId : String) : void
+    }
+
+    class SiteProfileController <<control>> {
+        ' NV9: Cập nhật thông tin Site
+        ' [FIX-Security] validateToken tách ra ISiteApiTokenVerifier — Site API token ≠ RBAC nội bộ
+        +updateSiteProfile(siteCode : String, data : Object) : void
+    }
+
+    class SiteInventorySyncController <<control>> {
+        ' NV10-11: Đồng bộ tồn kho & thêm mặt hàng
+        +syncInventoryData(siteCode : String, inventoryData : List<SiteInventoryDTO>) : void
+        +addNewMerchandise(siteCode : String, merchandiseId : String) : void
+    }
+
+    ' --- Admin Controllers ---
+    class AdminUserController <<control>> {
+        +getUserList() : List<UserAccount>
+        +createUser(data : Object) : void
+        +assignRole(userId : String, roleId : String) : void
+        +lockAccount(userId : String) : void
+    }
+
+    ' AuthorizationGuard: Middleware/Decorator thực thi RBAC tập trung (NV16-TH1)
+    ' Được inject vào tất cả controller nội bộ (BPBH, ĐHQT, Kho, Admin)
+    ' KHÔNG inject vào SiteXxxController — Site dùng ISiteApiTokenVerifier riêng
+    class AuthorizationGuard <<control>> {
+        +checkAccess(userId : String, feature : String) : boolean
+        +denyAccess() : void
+        ' enforceAccess: gọi checkAccess → nếu false tự gọi denyAccess() + throw
+        ' Các controller gọi enforceAccess() tại entry point mỗi public method
+        +enforceAccess(userId : String, feature : String) : void
+    }
+
+    ' --- Application Services ---
+    ' [FIX] InventorySearchService: tách scanSiteInventory khỏi AllocationService
+    ' Giảm coupling: ErrorResolutionController và AllocationService đều dùng chung
+    class InventorySearchService <<service>> {
+        +scanSiteInventory(merchandiseId : String, desiredDate : Date) : List<SiteInventory>
+    }
+
+    class AllocationService <<service>> {
+        ' [FIX-Coupling] Trả AllocationResult thay vì tự gọi NotificationService
+        +applyLogicAndAllocate(requestId : String, config : AllocationConfig) : AllocationResult
+        +checkInternalInventory(merchandiseId : String, qRequired : int) : int
+        ' [FIX] scanSiteInventory chuyển sang InventorySearchService
+        +deductFromSites(sites : List<SiteInventory>, qImport : int) : List<AllocationItem>
+    }
+
+    class ErrorResolutionService <<service>> {
+        +calculateOptimalPlan(strategy : IPlanStrategy, sites : List<Site>, order : OverseasOrder) : List<Proposal>
+    }
+
+    ' [FIX-Duplication] Gộp sendPrintGRNCommand() và generateGRN() thành một method rõ nghĩa
+    class GRNService <<service>> {
+        +generateAndPrintGRN(orderId : String) : void
+    }
+
+    class FinancialDeductionService <<service>> {
+        +triggerFinancialDeduction(orderId : String) : void
+    }
+
+    ' [FIX-BRD] Thêm RiskReportService để tạo RiskReport khi over-edit (NV2-TH5)
+    class RiskReportService <<service>> {
+        +generateRiskReport(changeLogId : int, oldQty : int, newQty : int) : RiskReport
+    }
+
+    ' [FIX] NotificationService tổng quát hóa: 1 method send() + target enum
+    ' Thay thế 3 method sendToBPBH/sendToDHQT/sendToSite riêng biệt
+    class NotificationService <<service>> {
+        +send(target : NotificationTarget, event : NotificationEvent, siteCode : String) : void
+    }
+
+    class DiscrepancyScheduler <<service>> {
+        +runDailyCheck() : void
+        ' [FIX-BRD] Sau force-close: gọi FinancialDeductionService + markForDisposal trên TemporaryInventory
+        +forceCloseExpiredOrders() : void
+    }
+
+    class InventorySyncScheduler <<service>> {
+        ' [FIX-Coupling] Gọi thẳng ISiteAPIAdapter + ISiteInventoryRepository, không qua controller
+        +runHourlySync() : void
+        +triggerSyncForAllSites() : void
+    }
+}
+
+' ==========================================
+' INTERFACE / ABSTRACTION LAYER
+' ==========================================
+package "Interfaces" {
+    interface IImportRequestRepository {
+        +findById(requestId : String) : ImportRequest
+        +findAll() : List<ImportRequest>
+        +save(request : ImportRequest) : void
+        +updateStatus(requestId : String, status : String) : void
+    }
+
+    interface IOrderRepository {
+        +findById(orderId : String) : OverseasOrder
+        +findByStatus(status : String) : List<OverseasOrder>
+        +save(order : OverseasOrder) : void
+        +updateStatus(orderId : String, status : String) : void
+    }
+
+    interface IMerchandiseRepository {
+        +findById(merchandiseId : String) : Merchandise
+        +findAll(filter : String) : List<Merchandise>
+        +save(merchandise : Merchandise) : void
+        +updateStatus(merchandiseId : String, status : String) : void
+    }
+
+    interface ISiteRepository {
+        +findAll() : List<Site>
+        +findBySiteCode(siteCode : String) : Site
+        +findAvailable(merchandiseId : String, time : Date) : List<Site>
+        +save(site : Site) : void
+    }
+
+    interface ISiteInventoryRepository {
+        +findBySiteAndMerchandise(siteCode : String, merchandiseId : String) : SiteInventory
+        +findByMerchandise(merchandiseId : String) : List<SiteInventory>
+        +save(inventory : SiteInventory) : void
+        +updateQuantity(siteCode : String, merchandiseId : String, qty : int) : void
+    }
+
+    interface IInventoryRepository {
+        +findByMerchandise(merchandiseId : String) : Inventory
+        +updateQuantity(skuId : String, qty : int) : void
+    }
+
+    interface ITemporaryInventoryRepository {
+        +findByOrderId(orderId : String) : List<TemporaryInventory>
+        +save(temp : TemporaryInventory) : void
+        +findExpired() : List<TemporaryInventory>
+    }
+
+    interface IDiscrepancyReportRepository {
+        +save(report : DiscrepancyReport) : void
+        +findByOrderId(orderId : String) : DiscrepancyReport
+    }
+
+    interface IUserAccountRepository {
+        +findById(userId : String) : UserAccount
+        +findAll() : List<UserAccount>
+        +save(account : UserAccount) : void
+        +updateStatus(userId : String, isActive : boolean) : void
+    }
+
+    ' [FIX-Duplication] Bỏ incrementFailedAttempt() khỏi repository — entity tự giữ state
+    interface IChangeLogRepository {
+        +save(log : ChangeLog) : void
+        +findByRequestId(requestId : String) : List<ChangeLog>
+    }
+
+    interface IWMSAdapter {
+        +syncInbound(orderId : String) : void
+        +updateInventory(skuId : String, qty : int) : void
+    }
+
+    interface IFinanceAdapter {
+        +deductCost(orderId : String) : void
+    }
+
+    interface ILogisticsAdapter {
+        +getLiveTracking(orderId : String) : Object
+    }
+
+    ' [FIX-ISP] Tách ISiteAPIAdapter thành 3 interface nhỏ theo nhóm nghiệp vụ
+    interface ISiteOrderAdapter {
+        +confirmPackaging(orderId : String) : void
+    }
+
+    interface ISiteProfileAdapter {
+        +updateProfile(siteCode : String, data : Object) : void
+    }
+
+    interface ISiteInventoryAdapter {
+        +fetchInventory(siteCode : String) : List<SiteInventoryDTO>
+        +registerMerchandise(siteCode : String, merchandiseId : String) : void
+    }
+
+    interface IPlanStrategy {
+        +calculate(sites : List<Site>, order : OverseasOrder) : List<Proposal>
+    }
+
+    ' [FIX-BRD] Repository cho ApprovalRequest entity
+    interface IApprovalRequestRepository {
+        +findByProposalId(proposalId : String) : ApprovalRequest
+        +save(approval : ApprovalRequest) : void
+    }
+
+    interface INotificationPublisher {
+        +publish(event : NotificationEvent) : void
+    }
+
+    ' ISiteApiTokenVerifier: xác thực API token từ đối tác Site qua API gateway
+    ' Tách biệt hoàn toàn khỏi AuthorizationGuard (RBAC nhân viên nội bộ)
+    ' Inject vào cả 3 SiteXxxController để dùng chung, không lặp validateToken()
+    interface ISiteApiTokenVerifier {
+        +verifyApiToken(token : String) : boolean
+    }
+}
+
+' ==========================================
+' ENTITY LAYER
+' ==========================================
+package "Entity Layer" {
+
+    class UserAccount <<entity>> {
+        -userId : String
+        -username : String
+        -passwordHash : String
+        -isActive : boolean
+        -roleId : String
+        -sessionToken : String
+        +activate() : void
+        +deactivate() : void
+        +revokeSession() : void
+        +hasPermission(feature : String) : boolean
+    }
+
+    class Role <<entity>> {
+        -roleId : String
+        -roleName : String
+        -allowedFeatures : List<String>
+        +canAccess(feature : String) : boolean
+    }
+
+    class ImportRequest <<entity>> {
+        -requestId : String
+        -createdBy : String
+        -createdAt : Date
+        -status : String
+        -version : int
+        -isAccepted : boolean
+        -logicId : String
+        ' failedAttemptCount nhúng trực tiếp — không cần entity EditAttemptLog riêng
+        -failedEditAttemptCount : int
+        +addDetail(detail : RequestDetail) : void
+        +updateStatus(status : String) : void
+        +submitRequest() : void
+        +setAccepted(status : boolean) : void
+        +incrementVersion() : void
+        +isLocked() : boolean
+        +incrementFailedEditAttempt() : void
+        +getFailedEditAttemptCount() : int
+    }
+
+    class RequestDetail <<entity>> {
+        -detailId : int
+        -requestId : String
+        -merchandiseId : String
+        -quantity : int
+        -unit : String
+        -desiredDeliveryDate : Date
+        +createDetail(merchandiseId : String, quantity : int, unit : String, deliveryDate : Date) : void
+    }
+
+    class Merchandise <<entity>> {
+        -merchandiseId : String
+        -merchandiseName : String
+        -defaultUnit : String
+        -status : String
+        -updatedAt : Date
+        +activate() : void
+        +deactivate() : void
+        +isActive() : boolean
+    }
+
+    ' ChangeLog chỉ ghi lịch sử thay đổi (SRP)
+    ' failedEditAttemptCount đã được nhúng vào ImportRequest — không cần entity riêng
+    class ChangeLog <<entity>> {
+        -logId : int
+        -requestId : String
+        -editDate : Date
+        -editedBy : String
+        -reason : String
+        -diffContent : String
+        ' actionType: "EDIT", "FAILED_EDIT_ATTEMPT", "CANCEL_DRAFT"
+        -actionType : String
+        +recordChange(before : Object, after : Object) : void
+    }
+
+    ' EditAttemptLog đã được nhúng vào ImportRequest.failedEditAttemptCount
+    ' Không cần entity riêng vì không có nhu cầu query độc lập theo nhiều chiều
+
+    class RiskReport <<entity>> {
+        -reportId : String
+        -changeLogId : int
+        -impactLevel : String
+        -riskDescription : String
+        -attachedDiff : String
+    }
+
+    class OverseasOrder <<entity>> {
+        -orderId : String
+        -requestId : String
+        -siteCode : String
+        -deliveryMethod : String
+        -status : String
+        -quantityOrdered : int
+        -holdingDeadline : DateTime
+        +cancel() : void
+        +complete() : void
+        +forceClose() : void
+        +isExpiredHolding() : boolean
+        ' [FIX] Khởi tạo thời gian đếm ngược 7 ngày khi phát hiện sai lệch (NV15-TH3)
+        +startHoldingPeriod(deadline : DateTime) : void
+    }
+
+    class AllocationItem <<entity>> {
+        -allocationId : String
+        -requestId : String
+        -merchandiseId : String
+        -siteCode : String
+        -quantity : int
+        -deliveryMethod : String
+    }
+
+    ' [FIX-Duplication] Proposal chỉ giữ trạng thái đề xuất kỹ thuật, bỏ approve/reject
+    ' Quyết định phê duyệt thuộc ApprovalRequest — tránh trùng behavior
+    class Proposal <<entity>> {
+        -proposalId : String
+        -orderId : String
+        -draftPlanDetails : String
+        -estimatedCost : double
+        -status : String
+        +markSubmitted() : void
+        +markExpired() : void
+    }
+
+    ' ApprovalRequest giữ approve/reject — đây là nơi duy nhất có business decision
+    class ApprovalRequest <<entity>> {
+        -approvalId : String
+        -proposalId : String
+        -requestedBy : String
+        -managerDecision : String
+        -rejectionReason : String
+        -decidedAt : Date
+        +approve() : void
+        +reject(reason : String) : void
+    }
+
+    class Site <<entity>> {
+        -siteCode : String
+        -siteName : String
+        -seaDeliveryDays : int
+        -airDeliveryDays : int
+        +canDeliverBy(desiredDate : Date, method : String) : boolean
+        +getDeliveryDays(method : String) : int
+    }
+
+    class SiteInventory <<entity>> {
+        -siteCode : String
+        -merchandiseId : String
+        -inStockQuantity : int
+        +deduct(qty : int) : void
+        +canFulfill(qty : int) : boolean
+    }
+
+    class Inventory <<entity>> {
+        -skuId : String
+        -merchandiseId : String
+        -currentQty : int
+        +addStock(qty : int) : void
+        +deduct(qty : int) : void
+        +isEnough(qty : int) : boolean
+    }
+
+    class TemporaryInventory <<entity>> {
+        -batchId : String
+        -orderId : String
+        -surplusQty : int
+        -holdingStatus : String
+        -expiryDate : DateTime
+        +isExpired() : boolean
+        ' [FIX-BRD] Method đã có, cần được gọi từ DiscrepancyScheduler.forceCloseExpiredOrders()
+        +markForDisposal() : void
+    }
+
+    class DiscrepancyReport <<entity>> {
+        -reportId : String
+        -orderId : String
+        -damageDescription : String
+        -createdAt : Date
+        -sentToSite : boolean
+        +markAsSent() : void
+    }
+
+    class NotificationEvent <<entity>> {
+        -eventId : String
+        -eventType : String
+        -targetDept : String
+        -payload : String
+        -createdAt : Date
+        -isRead : boolean
+    }
+
+    class AllocationConfig <<value object>> {
+        -logicId : String
+        -favoriteSiteName : String
+        +isLogicRequiresSite() : boolean
+        +getFavoriteSiteName() : String
+        +getLogicId() : String
+    }
+
+    ' [FIX] Enum cho NotificationService — thay thế 3 method sendToXxx riêng biệt
+    enum NotificationTarget <<value object>> {
+        BPBH
+        DHQT
+        SITE
+    }
+
+    ' Value object trả về từ AllocationFacade và EditRequestController
+    class AllocationResult <<value object>> {
+        -isSuccess : boolean
+        -errorCode : String
+        -items : List<AllocationItem>
+    }
+
+    class EditResult <<value object>> {
+        -isSuccess : boolean
+        -isHighImpact : boolean
+        -riskReport : RiskReport
+    }
+
+    ' DTO: dữ liệu phẳng, không mang hành vi — dùng làm biên giới giữa tầng
+    ' Tránh Entity Leakage: Boundary/Controller không cầm trực tiếp Entity
+
+    ' ProposalDTO: dữ liệu phẳng của Proposal để truyền lên tầng Boundary
+    class ProposalDTO <<dto>> {
+        -proposalId : String
+        -orderId : String
+        -draftPlanDetails : String
+        -estimatedCost : double
+        -status : String
+    }
+
+    ' ImportRequestDTO: dữ liệu phẳng của ImportRequest để Controller validate
+    ' thay vì nhận trực tiếp Entity ImportRequest
+    class ImportRequestDTO <<dto>> {
+        -requestId : String
+        -status : String
+        -details : List<RequestDetailDTO>
+    }
+
+    ' RequestDetailDTO: dữ liệu phẳng của từng dòng trong ImportRequest
+    class RequestDetailDTO <<dto>> {
+        -merchandiseId : String
+        -quantity : int
+        -unit : String
+        -desiredDeliveryDate : Date
+    }
+
+    ' SiteInventoryDTO: dữ liệu đồng bộ tồn kho từ ERP Site — thay thế raw List
+    class SiteInventoryDTO <<dto>> {
+        -siteCode : String
+        -merchandiseId : String
+        -inStockQuantity : int
+        -lastSyncedAt : Date
+    }
+}
+
+' ==========================================
+' INFRASTRUCTURE LAYER
+' ==========================================
+package "Infrastructure Layer" {
+    class ImportRequestRepository <<repository>> {
+        -db : DatabaseConnection
+        +findById(requestId : String) : ImportRequest
+        +findAll() : List<ImportRequest>
+        +save(request : ImportRequest) : void
+        +updateStatus(requestId : String, status : String) : void
+    }
+
+    class OverseasOrderRepository <<repository>> {
+        -db : DatabaseConnection
+        +findById(orderId : String) : OverseasOrder
+        +findByStatus(status : String) : List<OverseasOrder>
+        +save(order : OverseasOrder) : void
+        +updateStatus(orderId : String, status : String) : void
+    }
+
+    class MerchandiseRepository <<repository>> {
+        -db : DatabaseConnection
+        +findById(merchandiseId : String) : Merchandise
+        +findAll(filter : String) : List<Merchandise>
+        +save(merchandise : Merchandise) : void
+        +updateStatus(merchandiseId : String, status : String) : void
+    }
+
+    class SiteRepository <<repository>> {
+        -db : DatabaseConnection
+        +findAll() : List<Site>
+        +findBySiteCode(siteCode : String) : Site
+        +findAvailable(merchandiseId : String, time : Date) : List<Site>
+        +save(site : Site) : void
+    }
+
+    class SiteInventoryRepository <<repository>> {
+        -db : DatabaseConnection
+        +findBySiteAndMerchandise(siteCode : String, merchandiseId : String) : SiteInventory
+        +findByMerchandise(merchandiseId : String) : List<SiteInventory>
+        +save(inventory : SiteInventory) : void
+        +updateQuantity(siteCode : String, merchandiseId : String, qty : int) : void
+    }
+
+    class InventoryRepository <<repository>> {
+        -db : DatabaseConnection
+        +findByMerchandise(merchandiseId : String) : Inventory
+        +updateQuantity(skuId : String, qty : int) : void
+    }
+
+    class TemporaryInventoryRepository <<repository>> {
+        -db : DatabaseConnection
+        +findByOrderId(orderId : String) : List<TemporaryInventory>
+        +save(temp : TemporaryInventory) : void
+        +findExpired() : List<TemporaryInventory>
+    }
+
+    class DiscrepancyReportRepository <<repository>> {
+        -db : DatabaseConnection
+        +save(report : DiscrepancyReport) : void
+        +findByOrderId(orderId : String) : DiscrepancyReport
+    }
+
+    class UserAccountRepository <<repository>> {
+        -db : DatabaseConnection
+        +findById(userId : String) : UserAccount
+        +findAll() : List<UserAccount>
+        +save(account : UserAccount) : void
+        +updateStatus(userId : String, isActive : boolean) : void
+    }
+
+    ' failedEditAttemptCount đã nhúng vào ImportRequest — không cần EditAttemptLogRepository
+    class ChangeLogRepository <<repository>> {
+        -db : DatabaseConnection
+        +save(log : ChangeLog) : void
+        +findByRequestId(requestId : String) : List<ChangeLog>
+    }
+
+    ' [FIX-BRD] Thêm implementation cho IApprovalRequestRepository
+    class ApprovalRequestRepository <<repository>> {
+        -db : DatabaseConnection
+        +findByProposalId(proposalId : String) : ApprovalRequest
+        +save(approval : ApprovalRequest) : void
+    }
+
+    class WMSAdapter <<adapter>> {
+        +syncInbound(orderId : String) : void
+        +updateInventory(skuId : String, qty : int) : void
+    }
+
+    class FinanceAdapter <<adapter>> {
+        +deductCost(orderId : String) : void
+    }
+
+    class LogisticsAdapter <<adapter>> {
+        +getLiveTracking(orderId : String) : Object
+    }
+
+    ' SiteAPIAdapter implement cả 3 interface đã tách — vẫn là 1 class concrete
+    class SiteAPIAdapter <<adapter>> {
+        +confirmPackaging(orderId : String) : void
+        +updateProfile(siteCode : String, data : Object) : void
+        +fetchInventory(siteCode : String) : List<SiteInventoryDTO>
+        +registerMerchandise(siteCode : String, merchandiseId : String) : void
+    }
+
+    class NotificationPublisher <<adapter>> {
+        +publish(event : NotificationEvent) : void
+    }
+
+    ' Concrete implementation của ISiteApiTokenVerifier
+    ' Xác thực API token từ SiteAPIGateway, tách biệt khỏi session/RBAC nội bộ
+    class SiteApiTokenVerifier <<adapter>> {
+        +verifyApiToken(token : String) : boolean
+    }
+}
+
+' ==========================================
+' EXTERNAL SUBSYSTEMS
+' ==========================================
+package "External Subsystems" {
+    class ExternalWMS <<external>>
+    class LogisticsTrackingSystem <<external>>
+    class ExternalFinanceSystem <<external>>
+    class ExternalERPSite <<external>>
+    class SiteAPIGateway <<external>>
+}
+
+' ==========================================
+' STRATEGY IMPLEMENTATIONS
+' ==========================================
+package "Allocation Strategies" {
+    class BasicAllocationStrategy <<strategy>> {
+        +calculate(sites : List<Site>, order : OverseasOrder) : List<Proposal>
+    }
+
+    class FavoriteSiteStrategy <<strategy>> {
+        -favoriteSiteName : String
+        +calculate(sites : List<Site>, order : OverseasOrder) : List<Proposal>
+    }
+
+    class FastestDeliveryStrategy <<strategy>> {
+        +calculate(sites : List<Site>, order : OverseasOrder) : List<Proposal>
+    }
+
+    class FavoritePlusFastestStrategy <<strategy>> {
+        -favoriteSiteName : String
+        +calculate(sites : List<Site>, order : OverseasOrder) : List<Proposal>
+    }
+}
+
+' ==========================================
+' BOUNDARY → CONTROL
+' ==========================================
+CreateImportRequestScreen *-- ItemDetailPopup
+CreateImportRequestScreen --> CreateImportRequestController
+EditRequestForm_GUI --> EditRequestController
+MerchandiseManagementScreen --> MerchandiseController
+
+UI_RequestList --> RequestController
+UI_RequestDetail --> RequestController
+AllocationScreen --> AllocationController
+OrderFinalizationScreen --> OrderFinalizationController
+SiteManagementScreen --> SiteManagementController
+OverseasOrderManagementScreen --> OverseasOrderController
+CancelProcessingScreen --> CancelController
+ErrorHandlingScreen --> ErrorResolutionController
+
+' [FIX-BRD] ApprovalScreen thuộc BPBH → ApprovalController
+ApprovalScreen --> ApprovalController
+
+' [FIX-SRP] 3 Inbound screens → 2 controllers theo trách nhiệm
+InboundListScreen --> InboundController
+InboundVerifyScreen --> InboundController
+DiscrepancyFormScreen --> DiscrepancyController
+
+' [FIX-SRP] 3 Site screens → 3 controllers
+SiteOrderScreen --> SiteOrderController
+SiteProfileScreen --> SiteProfileController
+SiteInventoryScreen --> SiteInventorySyncController
+
+AdminUserManagementScreen --> AdminUserController
+
+' AuthorizationGuard inject vào toàn bộ controller nội bộ (BPBH, ĐHQT, Kho, Admin)
+' KHÔNG inject vào SiteXxxController (Site dùng ISiteApiTokenVerifier riêng)
+AuthorizationGuard --> IUserAccountRepository
+
+CreateImportRequestController --> AuthorizationGuard
+EditRequestController --> AuthorizationGuard
+MerchandiseController --> AuthorizationGuard
+RequestController --> AuthorizationGuard
+AllocationController --> AuthorizationGuard
+OrderFinalizationController --> AuthorizationGuard
+SiteManagementController --> AuthorizationGuard
+OverseasOrderController --> AuthorizationGuard
+CancelController --> AuthorizationGuard
+ErrorResolutionController --> AuthorizationGuard
+ApprovalController --> AuthorizationGuard
+InboundController --> AuthorizationGuard
+DiscrepancyController --> AuthorizationGuard
+AdminUserController --> AuthorizationGuard
+
+' ==========================================
+' CONTROL → SERVICE
+' ==========================================
+' [FIX] AllocationController dùng AllocationFacade — giảm từ 3 service dep xuống 1
+AllocationController --> AllocationFacade
+
+AllocationFacade --> AllocationService
+AllocationFacade --> NotificationService
+
+AllocationController --> ImportProcessingApplicationService
+
+OrderFinalizationController --> ImportProcessingApplicationService
+
+ErrorResolutionController --> ErrorResolutionService
+' [FIX] ErrorResolutionController dùng InventorySearchService — không phụ thuộc AllocationService
+ErrorResolutionController --> InventorySearchService
+
+' [FIX] AllocationService dùng InventorySearchService để scan site inventory
+AllocationService --> InventorySearchService
+
+InboundController --> GRNService
+DiscrepancyController --> FinancialDeductionService
+
+DiscrepancyScheduler --> FinancialDeductionService
+DiscrepancyScheduler --> NotificationService
+
+' [FIX-Coupling] InventorySyncScheduler không đi qua SitePortalController nữa
+' — gọi thẳng ISiteAPIAdapter và ISiteInventoryRepository (xem phần CONTROL → INTERFACE)
+
+EditRequestController --> NotificationService
+EditRequestController --> RiskReportService
+ErrorResolutionController --> NotificationService
+CancelController --> NotificationService
+
+' ==========================================
+' CONTROL → INTERFACE (DIP)
+' ==========================================
+CreateImportRequestController --> IImportRequestRepository
+CreateImportRequestController --> IMerchandiseRepository
+
+EditRequestController --> IImportRequestRepository
+EditRequestController --> IChangeLogRepository
+
+MerchandiseController --> IMerchandiseRepository
+
+RequestController --> IImportRequestRepository
+RequestController --> IOrderRepository
+RequestController --> ILogisticsAdapter
+
+AllocationController --> IImportRequestRepository
+AllocationController --> IOrderRepository
+
+' ImportProcessingApplicationService sở hữu 2 repository này thay cho 2 controller
+ImportProcessingApplicationService --> IImportRequestRepository
+ImportProcessingApplicationService --> IOrderRepository
+
+SiteManagementController --> ISiteRepository
+
+OverseasOrderController --> IOrderRepository
+
+CancelController --> IOrderRepository
+CancelController --> IImportRequestRepository
+CancelController --> ILogisticsAdapter
+
+ErrorResolutionController --> ISiteRepository
+ErrorResolutionController --> IOrderRepository
+
+' [FIX-Coupling] InboundController giảm xuống còn 3 dependency
+InboundController --> IOrderRepository
+InboundController --> IWMSAdapter
+InboundController --> IInventoryRepository
+
+' [FIX-SRP] DiscrepancyController giữ 2 dependency liên quan sai lệch
+DiscrepancyController --> ITemporaryInventoryRepository
+DiscrepancyController --> IDiscrepancyReportRepository
+
+' [FIX-ISP/Coupling] Mỗi Site controller chỉ inject đúng interface cần dùng
+' [FIX-Security] Cả 3 Site controller inject ISiteApiTokenVerifier — không lặp validateToken()
+SiteOrderController --> ISiteOrderAdapter
+SiteOrderController --> IOrderRepository
+SiteOrderController --> ISiteApiTokenVerifier
+
+SiteProfileController --> ISiteProfileAdapter
+SiteProfileController --> ISiteRepository
+SiteProfileController --> ISiteApiTokenVerifier
+
+SiteInventorySyncController --> ISiteInventoryAdapter
+SiteInventorySyncController --> ISiteInventoryRepository
+SiteInventorySyncController --> IMerchandiseRepository
+SiteInventorySyncController --> ISiteApiTokenVerifier
+
+' [FIX-BRD] ApprovalController cần ApprovalRequest và OverseasOrder
+ApprovalController --> IApprovalRequestRepository
+ApprovalController --> IOrderRepository
+ApprovalController --> NotificationService
+
+AdminUserController --> IUserAccountRepository
+
+GRNService --> IWMSAdapter
+FinancialDeductionService --> IFinanceAdapter
+FinancialDeductionService --> IOrderRepository
+
+NotificationService --> INotificationPublisher
+
+DiscrepancyScheduler --> ITemporaryInventoryRepository
+DiscrepancyScheduler --> IOrderRepository
+DiscrepancyScheduler --> IDiscrepancyReportRepository
+
+' [FIX-Coupling] InventorySyncScheduler gọi thẳng adapter + repository, không qua controller
+InventorySyncScheduler --> ISiteInventoryAdapter
+InventorySyncScheduler --> ISiteInventoryRepository
+
+' ==========================================
+' SERVICE → INTERFACE (DIP)
+' ==========================================
+AllocationService --> ISiteRepository
+AllocationService --> ISiteInventoryRepository
+AllocationService --> IInventoryRepository
+AllocationService --> IMerchandiseRepository
+AllocationService ..> IPlanStrategy
+
+ErrorResolutionService ..> IPlanStrategy
+ErrorResolutionService --> ISiteRepository
+
+RiskReportService --> IChangeLogRepository
+
+' ==========================================
+' INTERFACE → INFRASTRUCTURE IMPLEMENTATION
+' ==========================================
+IImportRequestRepository      <|.. ImportRequestRepository
+IOrderRepository               <|.. OverseasOrderRepository
+IMerchandiseRepository         <|.. MerchandiseRepository
+ISiteRepository                <|.. SiteRepository
+ISiteInventoryRepository       <|.. SiteInventoryRepository
+IInventoryRepository           <|.. InventoryRepository
+ITemporaryInventoryRepository  <|.. TemporaryInventoryRepository
+IDiscrepancyReportRepository   <|.. DiscrepancyReportRepository
+IUserAccountRepository         <|.. UserAccountRepository
+IChangeLogRepository           <|.. ChangeLogRepository
+IApprovalRequestRepository     <|.. ApprovalRequestRepository
+IWMSAdapter                    <|.. WMSAdapter
+IFinanceAdapter                <|.. FinanceAdapter
+ILogisticsAdapter              <|.. LogisticsAdapter
+INotificationPublisher         <|.. NotificationPublisher
+ISiteApiTokenVerifier            <|.. SiteApiTokenVerifier
+
+' [FIX-ISP] SiteAPIAdapter implement cả 3 interface đã tách
+ISiteOrderAdapter     <|.. SiteAPIAdapter
+ISiteProfileAdapter   <|.. SiteAPIAdapter
+ISiteInventoryAdapter <|.. SiteAPIAdapter
+
+' ==========================================
+' STRATEGY IMPLEMENTATIONS
+' ==========================================
+IPlanStrategy <|.. BasicAllocationStrategy
+IPlanStrategy <|.. FavoriteSiteStrategy
+IPlanStrategy <|.. FastestDeliveryStrategy
+IPlanStrategy <|.. FavoritePlusFastestStrategy
+
+' ==========================================
+' INFRASTRUCTURE → ENTITY (đọc/ghi domain)
+' ==========================================
+ImportRequestRepository      ..> ImportRequest
+OverseasOrderRepository      ..> OverseasOrder
+MerchandiseRepository        ..> Merchandise
+SiteRepository               ..> Site
+SiteInventoryRepository      ..> SiteInventory
+InventoryRepository          ..> Inventory
+TemporaryInventoryRepository ..> TemporaryInventory
+DiscrepancyReportRepository  ..> DiscrepancyReport
+UserAccountRepository        ..> UserAccount
+ChangeLogRepository          ..> ChangeLog
+ApprovalRequestRepository    ..> ApprovalRequest
+
+' ==========================================
+' INFRASTRUCTURE → EXTERNAL
+' ==========================================
+WMSAdapter          --> ExternalWMS
+FinanceAdapter      --> ExternalFinanceSystem
+LogisticsAdapter    --> LogisticsTrackingSystem
+SiteAPIAdapter      --> SiteAPIGateway
+SiteApiTokenVerifier  --> SiteAPIGateway
+InventorySyncScheduler --> ExternalERPSite
+
+' ==========================================
+' ENTITY RELATIONSHIPS
+' ==========================================
+' User & Role
+UserAccount "n" --> "1" Role
+
+' ImportRequest
+ImportRequest "1" *-- "1..*" RequestDetail
+ImportRequest "1" --> "0..*" ChangeLog
+RequestDetail "n" --> "1" Merchandise
+
+' ChangeLog → RiskReport
+ChangeLog "1" --> "0..1" RiskReport
+
+' OverseasOrder
+OverseasOrder "0..*" --> "1" Site
+OverseasOrder "1" --> "0..*" AllocationItem
+ImportRequest "1" --> "0..*" OverseasOrder
+
+' Proposal & Approval
+Proposal "0..*" --> "1" OverseasOrder
+Proposal "1" --> "0..1" ApprovalRequest
+
+' Site inventory
+Site "1" *-- "1..*" SiteInventory
+SiteInventory "n" --> "1" Merchandise
+
+' Internal inventory
+Inventory "1" --> "1" Merchandise
+
+' Temporary inventory
+TemporaryInventory "0..*" --> "1" OverseasOrder
+
+' Discrepancy
+DiscrepancyReport "0..1" --> "1" OverseasOrder
+
+' Notification
+NotificationEvent "0..*" --> "1" UserAccount
+
+@enduml
