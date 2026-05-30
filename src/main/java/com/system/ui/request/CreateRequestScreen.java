@@ -177,7 +177,6 @@ public class CreateRequestScreen {
         layout.setPadding(new Insets(24));
 
         Scene scene = new Scene(layout, 760, 680);
-        try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
         stage.setScene(scene);
         stage.show();
 
@@ -301,7 +300,6 @@ public class CreateRequestScreen {
         layout.getChildren().addAll(lblCode, lblHint, sep, grid, bottomBtns);
 
         Scene scene = new Scene(layout);
-        try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
         popup.setScene(scene);
         popup.show();
         Platform.runLater(txtQty::requestFocus);

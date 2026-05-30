@@ -39,7 +39,6 @@ public class UI_RequestDetail {
 
         layout.getChildren().addAll(new Label("Danh sách các mặt hàng:"), table, btnClose);
         Scene scene = new Scene(layout, 1200, 650);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         stage.setScene(scene);
         stage.show();
     }

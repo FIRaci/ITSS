@@ -158,7 +158,6 @@ public class EditRequestForm_GUI {
         layout.getChildren().addAll(new Label("Chỉnh sửa dòng hiện có:"), table, editGrid,
                 new Separator(), addNewSection, new Separator(), btnReview);
         Scene scene = new Scene(layout, 1200, 650);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         stage.setScene(scene);
         stage.show();
     }
@@ -200,7 +199,6 @@ public class EditRequestForm_GUI {
 
         layout.getChildren().addAll(new Label("Bảng So Sánh (Diff):"), txtDiff, new Label("Lý do:"), txtReason, btnConfirm);
         Scene scene = new Scene(layout, 550, 450);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         diffStage.setScene(scene);
         diffStage.show();
     }
