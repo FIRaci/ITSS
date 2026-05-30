@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch RetailApp",
+            "request": "launch",
+            "mainClass": "com.itss.App",
+            "vmArgs": "--enable-native-access=ALL-UNNAMED",
+            "env": {
+                "DB_URL": "jdbc:postgresql://localhost:5432/ITSS",
+                "DB_USER": "a123",
+                "DB_PASS": ""
+            }
+        }
+    ]
+}

@@ -24,12 +24,19 @@ public class Main extends Application {
     public void showSalesScreen() {
         com.system.ui.request.UI_RequestList ui = new com.system.ui.request.UI_RequestList(this);
         Scene scene = new Scene(ui.getView(), 1280, 800);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         primaryStage.setScene(scene);
         primaryStage.setTitle("Bộ phận Bán hàng - Retail App");
     }
 
     private Scene createStyledScene(javafx.scene.Parent root, double width, double height) {
-        return new Scene(root, width, height);
+        Scene scene = new Scene(root, width, height);
+        try {
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+        } catch (Exception e) {
+            System.err.println("Could not load style.css");
+        }
+        return scene;
     }
 
     public void showLoginScreen() {

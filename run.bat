@@ -1,20 +1,25 @@
 @echo off
-title RetailApp
-chcp 65001 >nul
+echo ==============================================
+echo        Starting RetailApp
+echo ==============================================
 
-echo [*] Building RetailApp...
-call mvn compile -q
-if errorlevel 1 (
-    echo [!] Build failed
+echo Building the project...
+call mvn compile
+if %errorlevel% neq 0 (
+    echo [ERROR] Build failed! Please check the errors above.
     pause
-    exit /b 1
+    exit /b %errorlevel%
 )
 
-:: Cloud DB — DATABASE_URL from .env (Aiven/Supabase)
-echo [*] Using cloud database (DATABASE_URL from .env)
-
-echo [*] Starting RetailApp...
+echo.
+echo Running the application...
 call mvn javafx:run
+if %errorlevel% neq 0 (
+    echo [ERROR] Application exited with an error.
+    pause
+    exit /b %errorlevel%
+)
 
-echo [!] Closed.
+echo.
+echo Application closed successfully.
 pause

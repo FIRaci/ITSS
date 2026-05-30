@@ -148,6 +148,7 @@ public class MerchandiseCatalogScreen {
         layout.getStyleClass().add("content-area");
 
         Scene scene = new Scene(layout, 950, 700);
+        try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
         stage.setScene(scene);
         stage.show();
     }

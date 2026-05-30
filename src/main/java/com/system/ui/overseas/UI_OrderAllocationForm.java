@@ -58,6 +58,7 @@ public class UI_OrderAllocationForm {
 
         layout.getChildren().addAll(new Label("Dự thảo kế hoạch tự động cho yêu cầu: " + requestId), table, btnConfirm);
         Scene scene = new Scene(layout, 800, 500);
+        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
         stage.setScene(scene);
         stage.show();
     }

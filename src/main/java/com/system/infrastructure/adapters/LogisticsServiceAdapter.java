@@ -3,9 +3,10 @@ package com.system.infrastructure.adapters;
 import com.system.domain.order.ILogisticsService;
 import com.system.domain.order.OverseasOrder;
 import com.system.infrastructure.persistence.OverseasOrderRepositoryImpl;
-import java.util.Date;
 
 public class LogisticsServiceAdapter implements ILogisticsService {
+    private static final String STATUS_IN_TRANSIT = "Đang giao";
+
     private OverseasOrderRepositoryImpl orderRepository;
 
     public LogisticsServiceAdapter() {
@@ -15,28 +16,9 @@ public class LogisticsServiceAdapter implements ILogisticsService {
     @Override
     public boolean checkOnBoardStatus(String orderId) {
         OverseasOrder order = orderRepository.findById(orderId);
-        if (order == null || order.getStatus() == null) {
+        if (order == null || order.getOrderStatus() == null) {
             return false;
         }
-        return "Đang giao".equalsIgnoreCase(order.getStatus().trim());
-    }
-
-    @Override
-    public String getLiveStatus(String orderId) {
-        OverseasOrder order = orderRepository.findById(orderId);
-        if (order == null) {
-            return "Unknown";
-        }
-        return order.getStatus();
-    }
-
-    @Override
-    public Date calculateETA(String status) {
-        return new Date();
-    }
-
-    @Override
-    public Object getLiveTracking(String orderId) {
-        return getLiveStatus(orderId);
+        return STATUS_IN_TRANSIT.equalsIgnoreCase(order.getOrderStatus().trim());
     }
 }

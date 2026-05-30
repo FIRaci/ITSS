@@ -1,21 +1,17 @@
 package com.system.domain.order;
 
 public class ApprovalRequest {
-    private String approvalId;
-    private String managerDecision;
+    private String requestId;
+    private boolean approved;
     private String rejectionReason;
 
-    public ApprovalRequest() {}
-
-    public ApprovalRequest(String approvalId, String managerDecision) {
-        this.approvalId = approvalId;
-        this.managerDecision = managerDecision;
+    public ApprovalRequest(String requestId, boolean approved, String rejectionReason) {
+        this.requestId = requestId;
+        this.approved = approved;
+        this.rejectionReason = rejectionReason;
     }
 
-    public String getApprovalId() { return approvalId; }
-    public String getManagerDecision() { return managerDecision; }
+    public String getRequestId() { return requestId; }
+    public boolean isApproved() { return approved; }
     public String getRejectionReason() { return rejectionReason; }
-    public void setApprovalId(String approvalId) { this.approvalId = approvalId; }
-    public void setManagerDecision(String d) { this.managerDecision = d; }
-    public void setRejectionReason(String r) { this.rejectionReason = r; }
 }

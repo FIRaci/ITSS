@@ -91,55 +91,6 @@ public class RequestRepositoryImpl {
         }
     }
 
-    public com.itss.ImportRequest findMasterById(String id) {
-        String sql = "SELECT * FROM ycnh WHERE id = ?";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, id);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return new com.itss.ImportRequest(rs.getString("id"), rs.getString("status"),
-                        rs.getBoolean("is_accepted"), rs.getString("created_by"), rs.getString("created_at"));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return null;
-    }
-
-    public ObservableList<com.itss.InternationalOrder> findOrdersByRequestId(String requestId) {
-        ObservableList<com.itss.InternationalOrder> list = FXCollections.observableArrayList();
-        String sql = "SELECT * FROM international_orders WHERE ycnh_id = ? ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, requestId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(new com.itss.InternationalOrder(
-                    rs.getInt("id"), rs.getString("ycnh_id"), rs.getString("site_code"),
-                    rs.getString("merchandise_code"), rs.getInt("qty"),
-                    rs.getString("shipping_method"), rs.getString("status")
-                ));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return list;
-    }
-
-    public void updateImportRequestStatus(String requestId, String status) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("UPDATE ycnh SET status = ? WHERE id = ?")) {
-            ps.setString(1, status);
-            ps.setString(2, requestId);
-            ps.executeUpdate();
-        } catch (Exception e) { e.printStackTrace(); }
-    }
-
-    public void clearDraft(String requestId) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("UPDATE ycnh_chitiet SET quantity = quantity WHERE ycnh_id = ?")) {
-            ps.setString(1, requestId);
-            ps.executeUpdate();
-        } catch (Exception e) { e.printStackTrace(); }
-    }
-
     public void insertNewRequest(String reqId, String user, List<com.itss.ImportRequestDetail> detailsList) throws Exception {
         try (Connection conn = Database.getConnection()) {
             conn.setAutoCommit(false);

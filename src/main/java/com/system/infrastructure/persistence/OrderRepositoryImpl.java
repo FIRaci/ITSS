@@ -9,7 +9,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.List;
 import javafx.collections.FXCollections;
-import com.system.domain.order.Proposal;
 import javafx.collections.ObservableList;
 
 public class OrderRepositoryImpl {
@@ -174,7 +173,7 @@ public class OrderRepositoryImpl {
                     }
                 }
 
-                try (PreparedStatement p2 = conn.prepareStatement("UPDATE international_orders SET status = 'Đã đặt hàng' WHERE id = ?")) {
+                try (PreparedStatement p2 = conn.prepareStatement("UPDATE international_orders SET status = 'Đã đặt hàng' WHERE id = ?")) { // return back to previous status
                     p2.setInt(1, orderId);
                     p2.executeUpdate();
                 }
@@ -189,111 +188,5 @@ public class OrderRepositoryImpl {
             }
         } catch (Exception e) { e.printStackTrace(); }
         return false;
-    }
-
-    public boolean checkOnBoardStatus(String orderId) {
-        try { return checkOnBoardStatus(Integer.parseInt(orderId)); }
-        catch (NumberFormatException e) { return false; }
-    }
-
-    public ObservableList<Proposal> findProposalsByOrderId(String orderId) {
-        try { return findProposalsByOrderId(Integer.parseInt(orderId)); }
-        catch (NumberFormatException e) { return FXCollections.observableArrayList(); }
-    }
-
-    public boolean checkOnBoardStatus(int orderId) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT in_transit FROM international_orders WHERE id = ?")) {
-            ps.setInt(1, orderId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getBoolean("in_transit");
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
-    }
-
-    public boolean updateOverseasOrderStatus(int orderId, String status) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("UPDATE international_orders SET status = ?, in_transit = ? WHERE id = ?")) {
-            ps.setString(1, status);
-            ps.setBoolean(2, "Đã lên tàu".equals(status));
-            ps.setInt(3, orderId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
-    }
-
-    public ObservableList<Proposal> findProposalsByOrderId(int orderId) {
-        ObservableList<Proposal> list = FXCollections.observableArrayList();
-        String sql = "SELECT * FROM proposals WHERE order_id = ? ORDER BY id DESC";
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, orderId);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                Proposal p = new Proposal(
-                    String.valueOf(rs.getInt("id")),
-                    rs.getString("description"),
-                    0.0
-                );
-                list.add(p);
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return list;
-    }
-
-    public boolean createOrdersForAllocation(String requestId) {
-        try (Connection conn = Database.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO international_orders (ycnh_id, site_code, merchandise_code, qty, shipping_method, status) " +
-                    "SELECT m.ycnh_id, m.site_code, m.merchandise_code, m.qty, m.shipping_method, 'CHỜ XỬ LÝ' " +
-                    "FROM allocation_plan m LEFT JOIN international_orders o ON m.ycnh_id = o.ycnh_id AND m.site_code = o.site_code AND m.merchandise_code = o.merchandise_code " +
-                    "WHERE o.id IS NULL AND m.ycnh_id = ?")) {
-                ps.setString(1, requestId);
-                return ps.executeUpdate() > 0;
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
-    }
-
-    public boolean updateOverseasOrderStatus(String orderId, String status) {
-        try {
-            return updateOverseasOrderStatus(Integer.parseInt(orderId), status);
-        } catch (NumberFormatException e) { return false; }
-    }
-
-    public boolean isOrderCancelled(String orderId) {
-        try { return isOrderCancelled(Integer.parseInt(orderId)); }
-        catch (NumberFormatException e) { return false; }
-    }
-
-    public int getOrderedQty(String orderId) {
-        try { return getOrderedQty(Integer.parseInt(orderId)); }
-        catch (NumberFormatException e) { return 0; }
-    }
-
-    public boolean isOrderCancelled(int orderId) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT status FROM international_orders WHERE id = ?")) {
-            ps.setInt(1, orderId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return "Đã hủy".equals(rs.getString("status"));
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return false;
-    }
-
-    public int getOrderedQty(int orderId) {
-        try (Connection conn = Database.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT qty FROM international_orders WHERE id = ?")) {
-            ps.setInt(1, orderId);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("qty");
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-        return 0;
     }
 }

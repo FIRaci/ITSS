@@ -77,6 +77,7 @@ public class UI_DiscrepancyForm {
             new Label("Giải trình chi tiết:"), txtNote,
             new Separator(), btnSave);
         Scene scene = new Scene(layout, 460, 480);
+        try { scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm()); } catch (Exception ignore) {}
         stage.setScene(scene);
         stage.show();
     }

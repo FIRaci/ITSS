@@ -1,47 +1,39 @@
 package com.system.application.order;
 
-import com.system.domain.order.OverseasOrder;
 import com.system.domain.order.Proposal;
-import com.system.infrastructure.persistence.OrderRepositoryImpl;
 import java.util.List;
 
 public class OrderActionController {
     private CancelAndErrorHandlingUseCase actionService;
-    private OrderRepositoryImpl orderRepo;
 
     public OrderActionController() {
         this.actionService = new CancelAndErrorHandlingUseCase();
-        this.orderRepo = new OrderRepositoryImpl();
     }
 
     public ResponseEntity<Void> cancelOrder(String orderId) {
-        if (orderRepo.checkOnBoardStatus(orderId)) {
-            return ResponseEntity.failure("In-transit cargo cannot be cancelled");
+        try {
+            actionService.processCancellation(orderId);
+            return ResponseEntity.success("Da huy don hang.");
+        } catch (Exception ex) {
+            return ResponseEntity.failure(ex.getMessage());
         }
-        actionService.submitCancelRequest(orderId);
-        orderRepo.updateOverseasOrderStatus(orderId, "Cancelled");
-        return ResponseEntity.success("Order cancelled successfully");
     }
 
     public ResponseEntity<List<Proposal>> generateReplacementPlan(String orderId) {
-        actionService.requestErrorProcessing(orderId);
-        List<Proposal> proposals = orderRepo.findProposalsByOrderId(orderId);
-        return ResponseEntity.success("Success", proposals);
+        try {
+            List<Proposal> proposals = actionService.processSiteError(orderId);
+            return ResponseEntity.success("Da tao phuong an thay the.", proposals);
+        } catch (Exception ex) {
+            return ResponseEntity.failure(ex.getMessage());
+        }
     }
 
     public ResponseEntity<Void> submitApproval(String proposalId) {
-        actionService.submitApprovalRequest(proposalId);
-        return ResponseEntity.success("Approval submitted");
-    }
-
-    public ResponseEntity<Void> confirmOrderUpdate() {
-        actionService.confirmOrderUpdate();
-        return ResponseEntity.success("Order updated");
-    }
-
-    public ResponseEntity<Void> processRejection(String orderId, String reason) {
-        actionService.processRejection(orderId, reason);
-        orderRepo.updateOverseasOrderStatus(orderId, "Rejected");
-        return ResponseEntity.success("Rejection processed");
+        try {
+            actionService.submitProposalForApproval(proposalId);
+            return ResponseEntity.success("Da gui yeu cau phe duyet.");
+        } catch (Exception ex) {
+            return ResponseEntity.failure(ex.getMessage());
+        }
     }
 }

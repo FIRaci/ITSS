@@ -1,0 +1,2 @@
+ALTER TABLE merchandise_catalog ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Đang kinh doanh';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
