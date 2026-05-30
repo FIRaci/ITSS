@@ -21,10 +21,22 @@ if (-not (Get-Command $ngrokPath -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
+# Load NGROK_AUTHTOKEN from .env (nếu có)
+$envFile = ".env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*NGROK_AUTHTOKEN\s*=\s*"(.+)"\s*$') {
+            $env:NGROK_AUTHTOKEN = $Matches[1]
+            Write-Host "[*] Loaded NGROK_AUTHTOKEN from .env" -ForegroundColor Cyan
+        }
+    }
+}
+
 Write-Host "[*] Starting ngrok TCP tunnel on port 5432..." -ForegroundColor Cyan
-Write-Host "[*] After startup, copy the forwarding URL (e.g. 0.tcp.ngrok.io:12345)" -ForegroundColor Cyan
-Write-Host "[*] Then set it in .env as:" -ForegroundColor Cyan
-Write-Host "    DATABASE_URL=""postgres://postgres:admin@<ngrok-url>/ITSS""" -ForegroundColor Green
+Write-Host ""
+Write-Host "[*] Sau khi chạy, copy URL dạng 0.tcp.ngrok.io:xxxxx" -ForegroundColor Cyan
+Write-Host "    rồi set vào .env:" -ForegroundColor Cyan
+Write-Host "    DATABASE_URL=""postgres://postgres:admin@0.tcp.ngrok.io:xxxxx/ITSS""" -ForegroundColor Green
 Write-Host ""
 
 & $ngrokPath tcp 5432 --log=stdout
