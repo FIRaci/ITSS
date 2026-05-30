@@ -14,31 +14,34 @@ public class OrderActionController {
         this.orderRepo = new OrderRepositoryImpl();
     }
 
-    public String cancelOrder(String orderId) {
+    public ResponseEntity<Void> cancelOrder(String orderId) {
         if (orderRepo.checkOnBoardStatus(orderId)) {
-            return "In-transit cargo cannot be cancelled";
+            return ResponseEntity.failure("In-transit cargo cannot be cancelled");
         }
         actionService.submitCancelRequest(orderId);
         orderRepo.updateOverseasOrderStatus(orderId, "Cancelled");
-        return "Order cancelled successfully";
+        return ResponseEntity.success("Order cancelled successfully");
     }
 
-    public List<Proposal> generateReplacementPlan(String orderId) {
+    public ResponseEntity<List<Proposal>> generateReplacementPlan(String orderId) {
         actionService.requestErrorProcessing(orderId);
-        return orderRepo.findProposalsByOrderId(orderId);
+        List<Proposal> proposals = orderRepo.findProposalsByOrderId(orderId);
+        return ResponseEntity.success("Success", proposals);
     }
 
-    public void submitApproval(String proposalId) {
+    public ResponseEntity<Void> submitApproval(String proposalId) {
         actionService.submitApprovalRequest(proposalId);
+        return ResponseEntity.success("Approval submitted");
     }
 
-    public void confirmOrderUpdate() {
+    public ResponseEntity<Void> confirmOrderUpdate() {
         actionService.confirmOrderUpdate();
+        return ResponseEntity.success("Order updated");
     }
 
-    public String processRejection(String orderId, String reason) {
+    public ResponseEntity<Void> processRejection(String orderId, String reason) {
         actionService.processRejection(orderId, reason);
         orderRepo.updateOverseasOrderStatus(orderId, "Rejected");
-        return "Rejection processed";
+        return ResponseEntity.success("Rejection processed");
     }
 }
