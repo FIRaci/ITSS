@@ -16,42 +16,20 @@ import java.util.Properties;
 
 public class Database {
 
-    private static final String JDBC_URL;
-    private static final String DB_USER;
-    private static final String DB_PASSWORD;
+    static final String JDBC_URL;
+    static final String DB_USER;
+    static final String DB_PASSWORD;
 
     static {
         Map<String, String> envVars = loadEnvFile();
 
         String databaseUrl = envVars.getOrDefault("DATABASE_URL", null);
         if (databaseUrl != null && !databaseUrl.isEmpty()) {
-            try {
-                String normalized = databaseUrl.replace("postgres://", "postgresql://");
-                URI uri = new URI(normalized);
-
-                String host = uri.getHost();
-                int port = uri.getPort();
-                String dbName = uri.getPath().substring(1);
-                String query = uri.getQuery();
-
-                String userInfo = uri.getUserInfo();
-                int colonIdx = userInfo.indexOf(':');
-                String user = userInfo.substring(0, colonIdx);
-                String password = userInfo.substring(colonIdx + 1);
-
-                String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
-                if (query != null && !query.isEmpty()) {
-                    jdbcUrl += "?" + query;
-                }
-
-                JDBC_URL = jdbcUrl;
-                DB_USER = user;
-                DB_PASSWORD = password;
-
-                System.out.println("[Database] Connected to: " + host + ":" + port + "/" + dbName);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to parse DATABASE_URL: " + databaseUrl, e);
-            }
+            DatabaseConfig cfg = parseDatabaseUrl(databaseUrl);
+            JDBC_URL = cfg.jdbcUrl();
+            DB_USER = cfg.user();
+            DB_PASSWORD = cfg.password();
+            System.out.println("[Database] Connected to: " + cfg.host() + ":" + cfg.port() + "/" + cfg.dbName());
         } else {
             JDBC_URL = "jdbc:postgresql://localhost:5432/ITSS";
             DB_USER = "postgres";
@@ -59,6 +37,46 @@ public class Database {
             System.out.println("[Database] Using local PostgreSQL (default)");
         }
     }
+
+    static DatabaseConfig parseDatabaseUrl(String databaseUrl) {
+        String normalized = databaseUrl.replace("postgres://", "postgresql://");
+        URI uri;
+        try {
+            uri = new URI(normalized);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid DATABASE_URL: " + databaseUrl, e);
+        }
+
+        String host = uri.getHost();
+        int port = uri.getPort();
+        if (host == null || port < 0) {
+            throw new IllegalArgumentException("Invalid DATABASE_URL (missing host/port): " + databaseUrl);
+        }
+
+        String path = uri.getPath();
+        if (path == null || path.length() < 2) {
+            throw new IllegalArgumentException("Invalid DATABASE_URL (missing db name): " + databaseUrl);
+        }
+        String dbName = path.substring(1);
+
+        String userInfo = uri.getUserInfo();
+        if (userInfo == null || !userInfo.contains(":")) {
+            throw new IllegalArgumentException("Invalid DATABASE_URL (missing user:password): " + databaseUrl);
+        }
+        int colonIdx = userInfo.indexOf(':');
+        String user = userInfo.substring(0, colonIdx);
+        String password = userInfo.substring(colonIdx + 1);
+        String query = uri.getQuery();
+
+        String jdbcUrl = "jdbc:postgresql://" + host + ":" + port + "/" + dbName;
+        if (query != null && !query.isEmpty()) {
+            jdbcUrl += "?" + query;
+        }
+
+        return new DatabaseConfig(jdbcUrl, user, password, host, port, dbName);
+    }
+
+    record DatabaseConfig(String jdbcUrl, String user, String password, String host, int port, String dbName) {}
 
     public static Connection getConnection() throws SQLException {
         try {
