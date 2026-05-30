@@ -1,7 +1,14 @@
 package com.system.infrastructure.dtos;
 
-import java.util.List;
 public class BufferStockDTO {
     public String orderId;
-    public List<String> excessItemsList;
+    public int excessQty;
+    public String warehouseZone;
+
+    public BufferStockDTO() {}
+
+    public BufferStockDTO(String orderId, int excessQty) {
+        this.orderId = orderId;
+        this.excessQty = excessQty;
+    }
 }

@@ -1,10 +1,16 @@
 package com.system.infrastructure.persistence;
 
 import com.itss.InternationalOrder;
+import com.system.domain.warehouse.DiscrepancyReport;
+import com.system.domain.warehouse.Inventory;
+import com.system.domain.warehouse.TemporaryInventory;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -34,6 +40,54 @@ public class WarehouseRepositoryImpl {
             return ps.executeUpdate() > 0;
         } catch (Exception ex) { ex.printStackTrace(); }
         return false;
+    }
+
+    public void saveInventory(Inventory inv) {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("INSERT INTO warehouse_inventory (merchandise_code, qty, location, created_at) VALUES (?, ?, ?, datetime('now'))")) {
+            ps.setString(1, inv.getSkuId());
+            ps.setInt(2, inv.getCurrentQty());
+            ps.setString(3, inv.getStorageLocation() != null ? inv.getStorageLocation() : "DEFAULT");
+            ps.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    public void saveTemporary(TemporaryInventory temp) {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("INSERT INTO temporary_inventory (order_id, merchandise_code, qty, hold_until) VALUES (?, ?, ?, ?)")) {
+            ps.setString(1, temp.getOrderId());
+            ps.setString(2, temp.getMerchandiseId());
+            ps.setInt(3, temp.getSurplusQty());
+            ps.setTimestamp(4, new java.sql.Timestamp(temp.getExpiryDate().getTime()));
+            ps.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    public void saveReport(DiscrepancyReport report) {
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                    "INSERT INTO discrepancy_reports (order_id, note, evidence_path, created_by, created_at) VALUES (?, ?, ?, ?, datetime('now'))")) {
+            ps.setString(1, report.getOrderId());
+            ps.setString(2, report.getDamageDescription());
+            ps.setString(3, report.getEvidenceImage());
+            ps.setString(4, "SYSTEM");
+            ps.executeUpdate();
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    public List<TemporaryInventory> findExpiredHoldings() {
+        List<TemporaryInventory> list = new ArrayList<>();
+        try (Connection conn = Database.getConnection();
+             PreparedStatement ps = conn.prepareStatement("SELECT * FROM temporary_inventory WHERE hold_until <= datetime('now') AND status = 'ACTIVE'")) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                TemporaryInventory t = new TemporaryInventory(rs.getString("id"), 0, 0);
+                t.setOrderId(rs.getString("order_id"));
+                t.setSurplusQty(rs.getInt("qty"));
+                list.add(t);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
     }
 
     public boolean reportDiscrepancy(InternationalOrder order, String reason, int qty, String evidencePath, String note, String user) {
